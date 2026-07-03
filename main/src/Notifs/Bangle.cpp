@@ -119,7 +119,7 @@ void Bangle::loop(){
 		auto fnEnd = line.find(")", fnStart);
 		if(fnEnd == std::string::npos) return std::string();
 
-		return std::string(line.cbegin() + fnStart, line.cend() + fnEnd);
+		return std::string(line.cbegin() + fnStart, line.cbegin() + fnEnd);
 	};
 
 	auto time = findArg("setTime");
