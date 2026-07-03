@@ -57,3 +57,17 @@ The official Android/iOS companion app ("CircuitMess Connect") refuses to open t
 ## Current project goals
 
 Build out `a-dev` and `i-dev` into genuinely different firmware per use case — different watch faces, different feature sets — sharing only the general-purpose fixes that land on `master`. Nothing platform-specific has been designed yet beyond the device-name change on `a-dev`.
+
+## `a-dev` protocol decision: stay on Bangle/GadgetBridge, don't adopt `AndroidProto`
+
+Upstream has an abandoned branch, `circuitmess/AndroidProto` (diverged from `master` at `f8c8c22`, last commit `03db596`), that replaces `Bangle.cpp`/`Bangle.h` entirely with a new `Android.cpp`/`Android.h` + `MediaSource`/`MediaInfo` — a custom `hello;`/`time;`/`notifAdd;`/`mediaState;`/`mediaInfo;` semicolon-delimited protocol with a version handshake (`Android::ProtocolVersion = "1"`, `Android::FirmwareVersion = "v2.1"`). It's backend-only — no `Screens`/`UIElements` changes, so a media/call UI would still need to be built from scratch regardless of which protocol backs it.
+
+This most likely explains the CircuitMess Connect app's "Outdated firmware" gate (see above): the app probably sends `hello;<protocolVersion>` and expects a `version;...` reply, which current firmware (public `master`, and the official `v2.1.1` release — neither ever got this branch merged) simply doesn't understand, so the handshake never completes. This is inferred from matching symptoms, not confirmed by sniffing actual CircuitMess Connect BLE traffic.
+
+**Decision: `a-dev` stays on the Bangle.js/GadgetBridge-compatible protocol (`Bangle.cpp`), not `AndroidProto`.** Reasoning:
+
+- GadgetBridge is verified working end-to-end right now (notifications, calls, time sync, find-phone) — switching to `Android.cpp` would drop GadgetBridge compatibility outright, since GadgetBridge only speaks the Bangle.js wire format.
+- Whether the current CircuitMess Connect app actually speaks `AndroidProto`'s protocol is unconfirmed — porting/finishing it is a bet against a closed, unverified, moving target (CircuitMess can change their app's expectations at any time, without notice, and we'd have to reverse-engineer again).
+- The whole point of this fork is staying in control of the watch — GadgetBridge is open source and doesn't gate functionality behind someone else's backend/version check; CircuitMess Connect does (that's the entire "Outdated firmware" saga).
+
+**`AndroidProto` is kept as a reference for ideas/fixes to port piecemeal, not a base to build on.** Concretely already identified: GadgetBridge sends `musicinfo` over the current Bangle protocol (confirmed live in serial log — `Unhandled command from phone: musicinfo`), which `Bangle.cpp` doesn't handle. Adding a handler for it (informed by how `Android::handleMediaInfo`/`MediaSource` model the data) is a cheap way to get media info without adopting the new protocol wholesale.
