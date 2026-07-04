@@ -54,6 +54,12 @@ idf.py -p /dev/cu.usbmodem101 flash   # port varies, check `ls /dev/cu.*`
 
 The official Android/iOS companion app ("CircuitMess Connect") refuses to open the Bangle GATT/notification path at all if it considers the firmware "outdated" — confirmed this blocks things even with the exact official `v2.1.1` release binary flashed (downloaded from GitHub Releases), so the gate compares against something newer than what's public. The web flasher at `code.circuitmess.com` only offers "Restore" to that same public release — no self-service way to get whatever newer version the app expects. **GadgetBridge (`com.espruino.gadgetbridge.banglejs` on Play Store) sidesteps this entirely** since it talks the BLE protocol directly and doesn't check CircuitMess's version gate — this is the recommended companion app for `a-dev`, not CircuitMess Connect.
 
+## Releases
+
+- **[a-dev-v1.0](https://github.com/Venser724/GC_Artemis-Firmware/releases/tag/a-dev-v1.0)** — first clean baseline for `a-dev` (commit `d3b8f49`). Bangle.cpp fix + `Bangle.js Artemis` device name, with Lunar Lander, Theremin, themes 2-9, and Perse-Ctrl/rover control (plus the Perse-Common submodule) stripped out. Attached asset `Artemis-a-dev-v1.0.bin` is a complete 4MB flash image (bootloader + app + partition table + storage) — flash directly with `esptool --chip esp32s3 write_flash 0 Artemis-a-dev-v1.0.bin`, no toolchain needed. Made this so the firmware could be handed to someone else without them setting up ESP-IDF.
+
+To cut a new release from any branch: tag the commit (`git tag -a <branch>-vX.Y -m "..." <sha>`, push with `git push origin <tag>`), build the merged single-file image with `esptool --chip esp32s3 merge_bin --fill-flash-size 4MB -o <name>.bin --flash_mode dio --flash_freq 80m 0x0 build/bootloader/bootloader.bin 0x8000 build/partition_table/partition-table.bin 0x10000 build/Artemis-Firmware.bin 0x2f6000 build/storage.bin`, then `gh release create <tag> --title "..." --notes-file <notes> <name>.bin`. Show release notes for approval before publishing — it's a public action.
+
 ## Current project goals
 
 Build out `a-dev` and `i-dev` into genuinely different firmware per use case — different watch faces, different feature sets — sharing only the general-purpose fixes that land on `master`. Nothing platform-specific has been designed yet beyond the device-name change on `a-dev`.
