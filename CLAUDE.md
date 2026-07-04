@@ -54,6 +54,45 @@ idf.py -p /dev/cu.usbmodem101 flash   # port varies, check `ls /dev/cu.*`
 
 The official Android/iOS companion app ("CircuitMess Connect") refuses to open the Bangle GATT/notification path at all if it considers the firmware "outdated" — confirmed this blocks things even with the exact official `v2.1.1` release binary flashed (downloaded from GitHub Releases), so the gate compares against something newer than what's public. The web flasher at `code.circuitmess.com` only offers "Restore" to that same public release — no self-service way to get whatever newer version the app expects. **GadgetBridge (`com.espruino.gadgetbridge.banglejs` on Play Store) sidesteps this entirely** since it talks the BLE protocol directly and doesn't check CircuitMess's version gate — this is the recommended companion app for `a-dev`, not CircuitMess Connect.
 
+## Hardware
+
+- **Platform lineage**: this runs on CircuitMess's "Bit" hardware platform — `Pins.hpp`/`Pins.cpp` label the pin maps "Bit", "Bit 2", "Bit v3", not "Artemis"/"Clockstar". The same (or near-identical) mainboard is shared across CircuitMess's Bit, Clockstar, and Artemis Watch product lines — different firmware/case/branding, same board. No public schematic/PCB repo exists anywhere in the CircuitMess GitHub org (checked all ~90 repos) — everything below comes from reading the firmware, not a datasheet.
+- **This specific watch (Venser724's, bought as NASA Artemis Watch 2.0)**: hardware revision **2**, Product ID `0x0003`. Confirmed by reading eFuse directly off the chip, not inferred from firmware defaults.
+- **Reading a device's actual revision**: `EfuseMeta::check()` only compares Product ID, never revision, and `EfuseMeta::log()` (which would print the revision) only fires on a PID mismatch — so the revision never shows up in normal boot logs. Read it directly instead, without touching the running firmware (safe — same read-only protocol `esptool` uses, no JTAG, no live function calls):
+
+  ```bash
+  espefuse.py --port <PORT> dump
+  ```
+
+  Decode `BLOCK_USR_DATA (BLOCK3)` from the dump: word0 bits 16-31 = Product ID (expect `0x0003` for this watch), word1 bits 0-7 = hardware revision.
+- **Revision groups in firmware**: `Pins.cpp` maps revisions 0-1 ("Bit"/"Bit 2") to one pinout and revisions 2-3 ("Bit v3") to a different one — rev 2 and rev 3 are pin-compatible, only rev 0-1 differs.
+- **MCU**: ESP32-S3.
+- **Display**: ST7735S, 128x128, SPI (via `LovyanGFX`).
+- **IMU**: ST LSM6DS3TR-C (accelerometer + gyro), I2C, two interrupt lines.
+- **Battery**: plain ADC reading, no fuel-gauge IC. Revision2 boards add a separate Vref pin for calibration that Revision1 lacks.
+
+### Pinout — Revision2 / "Bit v3" (this watch)
+
+Source of truth: `main/src/Pins.cpp`. GPIO numbers are ESP32-S3 pins.
+
+| Signal | GPIO | Signal | GPIO |
+| --- | --- | --- | --- |
+| BtnDown | 2 | TftRst | 34 |
+| BtnUp | 1 | Rgb_r | 14 |
+| BtnSelect | 3 | Rgb_g | 12 |
+| BtnAlt | 21 | Rgb_b | 13 |
+| LedBl (backlight) | 33 | ChrgIn | 7 |
+| Buzz | 47 | ChrgOut | 6 |
+| BattRead | 5 | Pwdn | 37 |
+| BattVref | 4 | Imu_int1 | 38 |
+| Usb | 42 | Imu_int2 | 39 |
+| I2cSda | 40 | Led_1 | 46 |
+| I2cScl | 41 | Led_2 | 45 |
+| TftSck | 36 | Led_3 | 44 |
+| TftMosi | 35 | Led_4 | 43 |
+| TftDc | 48 | Led_5 | 18 |
+| | | Led_6 | 17 |
+
 ## Releases
 
 - **[a-dev-v1.0](https://github.com/Venser724/GC_Artemis-Firmware/releases/tag/a-dev-v1.0)** — first clean baseline for `a-dev` (commit `d3b8f49`). Bangle.cpp fix + `Bangle.js Artemis` device name, with Lunar Lander, Theremin, themes 2-9, and Perse-Ctrl/rover control (plus the Perse-Common submodule) stripped out. Attached asset `Artemis-a-dev-v1.0.bin` is a complete 4MB flash image (bootloader + app + partition table + storage) — flash directly with `esptool --chip esp32s3 write_flash 0 Artemis-a-dev-v1.0.bin`, no toolchain needed. Made this so the firmware could be handed to someone else without them setting up ESP-IDF.
