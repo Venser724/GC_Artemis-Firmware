@@ -30,11 +30,7 @@ void MenuBatteryElement::updateLevelVisuals(){
 
 	const Theme theme = settings->get().themeData.theme;
 
-	if(theme == Theme::Theme2){
-		lv_obj_set_style_pad_top(img, 1, 0);
-	}else{
-		lv_obj_set_style_pad_top(img, 0, 0);
-	}
+	lv_obj_set_style_pad_top(img, 0, 0);
 
 	const char* BatteryIcons[] = {
 			THEMED_FILE(Menu, BatteryEmpty, theme), THEMED_FILE(Menu, BatteryLow, theme), THEMED_FILE(Menu, BatteryMid, theme), THEMED_FILE(Menu, BatteryFull, theme)

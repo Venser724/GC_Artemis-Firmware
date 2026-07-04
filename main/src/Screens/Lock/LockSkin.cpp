@@ -3,14 +3,7 @@
 #include "Settings/Settings.h"
 #include "Util/Services.h"
 #include "LV_Interface/InputLVGL.h"
-#include "Screens/Lock/Elements/Theme2BatteryElement.h"
-#include "Screens/Lock/Elements/Theme3BatteryElement.h"
-#include "Screens/Lock/Elements/Theme4BatteryElement.h"
-#include "Screens/Lock/Elements/Theme5BatteryElement.h"
-#include "Screens/Lock/Elements/Theme6BatteryElement.h"
-#include "Screens/Lock/Elements/Theme9BatteryElement.h"
-#include "Screens/Lock/Elements/Theme7BatteryElement.h"
-#include "Screens/Lock/Elements/Theme8BatteryElement.h"
+#include "Screens/MainMenu/MenuBatteryElement.h"
 #include "UIElements/NotifIconsElement.h"
 #include "Theme/theme.h"
 
@@ -218,47 +211,7 @@ void LockSkin::buildUI(){
 
 	phoneElement = new PhoneElement(main, false, themeData.specialPhone);
 
-	switch(themeData.theme){
-		case Theme::Theme1:{
-			batteryElement = new MenuBatteryElement(main);
-			break;
-		}
-		case Theme::Theme2:{
-			batteryElement = new Theme2BatteryElement(main);
-			break;
-		}
-		case Theme::Theme3:{
-			batteryElement = new Theme3BatteryElement(main);
-			break;
-		}
-		case Theme::Theme4:{
-			batteryElement = new Theme4BatteryElement(main);
-			break;
-		}
-		case Theme::Theme5:{
-			batteryElement = new Theme5BatteryElement(main);
-			break;
-		}
-		case Theme::Theme6:{
-			batteryElement = new Theme6BatteryElement(main);
-			break;
-		}
-		case Theme::Theme7:{
-			batteryElement = new Theme7BatteryElement(main);
-			break;
-		}
-		case Theme::Theme8:{
-			batteryElement = new Theme8BatteryElement(main);
-			break;
-		}
-		case Theme::Theme9:{
-			batteryElement = new Theme9BatteryElement(main);
-			break;
-		}
-		default:{
-			break;
-		}
-	}
+	batteryElement = new MenuBatteryElement(main);
 
 	lv_obj_set_align(*batteryElement, LV_ALIGN_TOP_LEFT);
 	lv_obj_set_x(*batteryElement, themeData.batteryX);

@@ -19,11 +19,7 @@ ClockLabelBig::ClockLabelBig(lv_obj_t* parent, bool vertical, int16_t verticalPa
 
 	lv_obj_set_flex_align(obj, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START);
 
-	if(settings->get().themeData.theme == Theme::Theme3 || settings->get().themeData.theme == Theme::Theme4){
-		lv_obj_set_style_pad_gap(obj, 0, 0);
-	}else{
-		lv_obj_set_style_pad_gap(obj, 4, 0);
-	}
+	lv_obj_set_style_pad_gap(obj, 4, 0);
 
 	hours = lv_obj_create(obj);
 	minutes = lv_obj_create(obj);
@@ -38,13 +34,8 @@ ClockLabelBig::ClockLabelBig(lv_obj_t* parent, bool vertical, int16_t verticalPa
 	lv_obj_set_flex_align(hours, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START);
 	lv_obj_set_flex_align(minutes, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START);
 
-	if(settings->get().themeData.theme == Theme::Theme4){
-		lv_obj_set_style_pad_gap(hours, 0, 0);
-		lv_obj_set_style_pad_gap(minutes, 0, 0);
-	}else{
-		lv_obj_set_style_pad_gap(hours, 4, 0);
-		lv_obj_set_style_pad_gap(minutes, 4, 0);
-	}
+	lv_obj_set_style_pad_gap(hours, 4, 0);
+	lv_obj_set_style_pad_gap(minutes, 4, 0);
 
 	hourIcons[0] = lv_img_create(hours);
 	hourIcons[1] = lv_img_create(hours);

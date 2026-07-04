@@ -126,8 +126,8 @@ void SettingsScreen::updateVisuals(){
 	}
 
 	if(container != nullptr){
-		lv_obj_set_size(container, 128, 128 - TopPadding - (theme == Theme::Theme9 ? 7 : 0));
-		lv_obj_set_pos(container, 0, TopPadding + (theme == Theme::Theme9 ? 7 : 0));
+		lv_obj_set_size(container, 128, 128 - TopPadding);
+		lv_obj_set_pos(container, 0, TopPadding);
 	}
 
 	if(statusBar != nullptr){
@@ -136,10 +136,6 @@ void SettingsScreen::updateVisuals(){
 
 	if(timeFormatSwitch != nullptr){
 		timeFormatSwitch->updateVisuals();
-	}
-
-	if(themePicker != nullptr){
-		themePicker->updateVisuals();
 	}
 
 	if(manualTime != nullptr){
@@ -197,8 +193,8 @@ void SettingsScreen::buildUI(){
 	lv_obj_set_style_bg_opa(bg, LV_OPA_COVER, 0);
 
 	container = lv_obj_create(*this);
-	lv_obj_set_size(container, 128, 128 - TopPadding - (theme == Theme::Theme9 ? 7 : 0));
-	lv_obj_set_pos(container, 0, TopPadding + (theme == Theme::Theme9 ? 7 : 0));
+	lv_obj_set_size(container, 128, 128 - TopPadding);
+	lv_obj_set_pos(container, 0, TopPadding);
 	lv_obj_add_flag(container, LV_OBJ_FLAG_SCROLLABLE);
 	lv_obj_set_flex_flow(container, LV_FLEX_FLOW_COLUMN);
 	lv_obj_set_flex_align(container, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
@@ -219,17 +215,6 @@ void SettingsScreen::buildUI(){
 		statusBar->set24hFormat(value);
 	}, startingSettings.timeFormat24h);
 	lv_group_add_obj(inputGroup, *timeFormatSwitch);
-
-	themePicker = new PickerElement(container, "Change theme", (uint16_t) startingSettings.themeData.theme,
-									"Default\nArcade\nAnalog\nDuotone\nMachine\nTXT\nCY-PUNK\nCipher\n1-Up",
-									[this](uint16_t selected){
-										SettingsStruct sett = settings.get();
-										sett.themeData = createTheme((Theme) selected);
-										settings.set(sett);
-
-										updateVisuals();
-									});
-	lv_group_add_obj(inputGroup, *themePicker);
 
 	dateFormatPicker = new PickerElement(container, "Date format", (uint16_t) startingSettings.dateFormat,
 										 "D.M.Y\nM.D.Y",

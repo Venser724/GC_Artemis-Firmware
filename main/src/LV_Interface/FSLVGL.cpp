@@ -208,9 +208,7 @@ void FSLVGL::loadCache(Theme theme){
 			THEMED_FILE(Menu, Connection, theme),
 			THEMED_FILE(Menu, Find, theme),
 			THEMED_FILE(Menu, Level, theme),
-			THEMED_FILE(Menu, Settings, theme),
-			THEMED_FILE(Menu, Theremin, theme),
-			THEMED_FILE(Menu, Lunar, theme)
+			THEMED_FILE(Menu, Settings, theme)
 	};
 
 	for(const auto& p: Cached){

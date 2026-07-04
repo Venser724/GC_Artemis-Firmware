@@ -37,9 +37,6 @@
 #include "Util/Notes.h"
 #include "Screens/Intro/IntroScreen.h"
 #include "Filepaths.hpp"
-#include "Screens/Lander/LunarLander.h"
-#include "Screens/PerseCtrl/WiFiSTA.h"
-#include "Screens/PerseCtrl/TCPClient.h"
 
 LVGL* lvgl;
 BacklightBrightness* bl;
