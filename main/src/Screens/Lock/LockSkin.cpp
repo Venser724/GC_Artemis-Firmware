@@ -304,14 +304,16 @@ void LockSkin::setDateLabel(){
 	const tm tm = time->getTime();
 
 	constexpr static const char* months[] = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
+	constexpr static const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
 
 	const std::string day = std::to_string(tm.tm_mday) +
 							(tm.tm_mday % 10 == 1 && tm.tm_mday / 10 != 1 ? "ST" :
 							 tm.tm_mday % 10 == 2 && tm.tm_mday / 10 != 1 ? "ND" :
 							 tm.tm_mday % 10 == 3 && tm.tm_mday / 10 != 1 ? "RD" : "TH");
 	const std::string month = months[tm.tm_mon];
+	const std::string weekday = weekdays[tm.tm_wday];
 
-	const std::string dateString = (settings->get().dateFormat == DateFormat::Regular ? day : month) + " " +
+	const std::string dateString = weekday + " " + (settings->get().dateFormat == DateFormat::Regular ? day : month) + " " +
 								   (settings->get().dateFormat == DateFormat::Regular ? month : day) + " " + std::to_string(tm.tm_year + 1900);
 
 	lv_label_set_text(date, dateString.c_str());
