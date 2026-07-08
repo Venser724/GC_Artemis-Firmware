@@ -5,9 +5,64 @@
 #include <esp_log.h>
 #include <cmath>
 #include <regex>
+#include <cstdlib>
 #include <mbedtls/base64.h>
 
 static const char* TAG = "Bangle";
+
+// GadgetBridge/Bangle.js encodes non-ASCII characters as JSON \uXXXX escapes
+// rather than raw UTF-8 - this decodes them (including UTF-16 surrogate pairs,
+// e.g. for emoji) into actual UTF-8 bytes so LVGL (built with
+// CONFIG_LV_TXT_ENC_UTF8) and a Cyrillic-capable font can render them,
+// instead of the previous behavior of replacing each escape with "?".
+static std::string decodeUnicodeEscapes(const std::string& in){
+	auto parseHex4 = [&](size_t pos, long& value) -> bool {
+		if(pos + 4 > in.size()) return false;
+		std::string hex = in.substr(pos, 4);
+		char* end = nullptr;
+		value = strtol(hex.c_str(), &end, 16);
+		return end == hex.c_str() + 4;
+	};
+
+	std::string out;
+	out.reserve(in.size());
+
+	size_t i = 0;
+	while(i < in.size()){
+		long code;
+		if(in[i] == '\\' && i + 1 < in.size() && in[i + 1] == 'u' && parseHex4(i + 2, code)){
+			i += 6;
+
+			long low;
+			if(code >= 0xD800 && code <= 0xDBFF && i + 1 < in.size() && in[i] == '\\' && in[i + 1] == 'u'
+			   && parseHex4(i + 2, low) && low >= 0xDC00 && low <= 0xDFFF){
+				code = 0x10000 + ((code - 0xD800) << 10) + (low - 0xDC00);
+				i += 6;
+			}
+
+			if(code < 0x80){
+				out += (char) code;
+			}else if(code < 0x800){
+				out += (char) (0xC0 | (code >> 6));
+				out += (char) (0x80 | (code & 0x3F));
+			}else if(code < 0x10000){
+				out += (char) (0xE0 | (code >> 12));
+				out += (char) (0x80 | ((code >> 6) & 0x3F));
+				out += (char) (0x80 | (code & 0x3F));
+			}else{
+				out += (char) (0xF0 | (code >> 18));
+				out += (char) (0x80 | ((code >> 12) & 0x3F));
+				out += (char) (0x80 | ((code >> 6) & 0x3F));
+				out += (char) (0x80 | (code & 0x3F));
+			}
+		}else{
+			out += in[i];
+			++i;
+		}
+	}
+
+	return out;
+}
 const std::map<std::pair<Bangle::CallState, Bangle::CallCmd>, Bangle::CallState> Bangle::CallTransitions = {
 		{ { Bangle::CallState::None,             Bangle::CallCmd::Incoming }, Bangle::CallState::Incoming },
 		{ { Bangle::CallState::None,             Bangle::CallCmd::Outgoing }, Bangle::CallState::Outgoing },
@@ -370,7 +425,7 @@ std::string Bangle::getProperty(const std::string& line, std::string prop){
 		return {};
 	}
 
-	s = std::regex_replace(s, std::regex(R"(\\u[a-zA-Z0-9]{3,4})"), "?");
+	s = decodeUnicodeEscapes(s);
 	s = std::regex_replace(s, std::regex(R"(\\n)"), "\n");
 	s = std::regex_replace(s, std::regex(R"(\\r)"), "\r");
 	s = std::regex_replace(s, std::regex(R"(\\\\)"), "\\");

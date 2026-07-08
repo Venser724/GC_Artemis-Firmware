@@ -40,7 +40,7 @@ private:
 
 	const std::function<void()> onDismiss;
 
-	static constexpr uint8_t LabelHeight = 8;
+	static constexpr uint8_t LabelHeight = 18; // devin line_height (16px) + baseline padding
 };
 
 
