@@ -38,6 +38,9 @@ void WeatherElement::set(Condition condition, int8_t tempCelsius){
 		case Condition::Rainy:
 			path = File::Weather::Theme1::Rain;
 			break;
+		case Condition::Snowy:
+			path = File::Weather::Theme1::Snow;
+			break;
 		case Condition::Cloudy:
 		default:
 			path = File::Weather::Theme1::Cloud;

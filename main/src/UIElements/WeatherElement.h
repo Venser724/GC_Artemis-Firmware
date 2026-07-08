@@ -6,7 +6,7 @@
 class WeatherElement : public LVObject {
 public:
 	enum class Condition {
-		Sunny, Cloudy, Rainy
+		Sunny, Cloudy, Rainy, Snowy
 	};
 
 	explicit WeatherElement(lv_obj_t* parent);

@@ -243,7 +243,7 @@ void LockSkin::buildUI(){
 	lv_obj_set_align(*weather, LV_ALIGN_CENTER);
 	lv_obj_set_x(*weather, themeData.notifData.x);
 	lv_obj_set_y(*weather, themeData.notifData.y);
-	weather->set(WeatherElement::Condition::Cloudy, 22); // placeholder until Wi-Fi/API backend exists
+	weather->set(WeatherElement::Condition::Snowy, 22); // placeholder until Wi-Fi/API backend exists
 
 	locker = new Slider(main, themeData.sliderConfig);
 	lv_obj_set_y(*locker, themeData.sliderY);

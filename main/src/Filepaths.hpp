@@ -93,6 +93,7 @@ namespace File {
 			[[maybe_unused]] constexpr const char* Sun = "S:/theme1/weather/sun.bin";
 			[[maybe_unused]] constexpr const char* Cloud = "S:/theme1/weather/cloud.bin";
 			[[maybe_unused]] constexpr const char* Rain = "S:/theme1/weather/rain.bin";
+			[[maybe_unused]] constexpr const char* Snow = "S:/theme1/weather/snow.bin";
 		}
 	}
 
