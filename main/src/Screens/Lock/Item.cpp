@@ -23,7 +23,7 @@ Item::Item(lv_obj_t* parent, std::function<void()> dismiss) : LVSelectable(paren
 	lv_obj_add_style(*this, focused, LV_STATE_FOCUSED);
 
 	top = lv_obj_create(*this);
-	lv_obj_set_size(top, lv_pct(100), 11);
+	lv_obj_set_size(top, lv_pct(100), LabelHeight);
 	lv_obj_set_flex_flow(top, LV_FLEX_FLOW_ROW);
 	lv_obj_set_flex_align(top, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
