@@ -4,6 +4,7 @@
 #include "LV_Interface/LVObject.h"
 #include "UIElements/StatusBar.h"
 #include "UIElements/ClockLabelBig.h"
+#include "UIElements/WeatherElement.h"
 #include "Slider.h"
 #include "Item.h"
 
@@ -33,6 +34,7 @@ private:
 	lv_obj_t* rest = nullptr;
 	lv_obj_t* notifList = nullptr;
 	lv_obj_t* date = nullptr;
+	WeatherElement* weather = nullptr;
 
 	static constexpr uint8_t MaxNotifs = Phone::MaxNotifs;
 	std::unordered_map<uint32_t, Item*> notifs;

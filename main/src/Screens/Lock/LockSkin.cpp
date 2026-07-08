@@ -238,6 +238,13 @@ void LockSkin::buildUI(){
 	lv_obj_set_style_text_color(date, themeData.dateColor, 0);
 	setDateLabel();
 
+	// shares the notif icons row: weather icon pinned left, temp pinned right, bell icons centered - see WeatherElement
+	weather = new WeatherElement(main);
+	lv_obj_set_align(*weather, LV_ALIGN_CENTER);
+	lv_obj_set_x(*weather, themeData.notifData.x);
+	lv_obj_set_y(*weather, themeData.notifData.y);
+	weather->set(WeatherElement::Condition::Cloudy, 22); // placeholder until Wi-Fi/API backend exists
+
 	locker = new Slider(main, themeData.sliderConfig);
 	lv_obj_set_y(*locker, themeData.sliderY);
 

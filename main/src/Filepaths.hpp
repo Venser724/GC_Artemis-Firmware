@@ -88,6 +88,14 @@ namespace File {
 		namespace Theme1 = Icons::Theme1;
 	}
 
+	namespace Weather {
+		namespace Theme1 {
+			[[maybe_unused]] constexpr const char* Sun = "S:/theme1/weather/sun.bin";
+			[[maybe_unused]] constexpr const char* Cloud = "S:/theme1/weather/cloud.bin";
+			[[maybe_unused]] constexpr const char* Rain = "S:/theme1/weather/rain.bin";
+		}
+	}
+
 	namespace Menu {
 		namespace Theme1 {
 			[[maybe_unused]] constexpr const char* BatteryEmpty = "S:/theme1/menu/batteryEmpty.bin";
