@@ -30,6 +30,9 @@ void SettingsScreen::loop(){
 				if(timePickerModal != nullptr){
 					delete timePickerModal;
 					timePickerModal = nullptr;
+				}else if(alarmTimeModal != nullptr){
+					delete alarmTimeModal;
+					alarmTimeModal = nullptr;
 				}else{
 					shouldTransition = true;
 				}
@@ -54,6 +57,11 @@ void SettingsScreen::onStop(){
 		timePickerModal = nullptr;
 	}
 
+	if(alarmTimeModal != nullptr){
+		delete alarmTimeModal;
+		alarmTimeModal = nullptr;
+	}
+
 	auto savedSettings = settings.get();
 	savedSettings.notificationSounds = audioSwitch->getValue();
 	savedSettings.screenBrightness = brightnessSlider->getValue();
@@ -62,6 +70,7 @@ void SettingsScreen::onStop(){
 	savedSettings.motionDetection = motionSwitch->getValue();
 	savedSettings.screenRotate = rotationSwitch->getValue();
 	savedSettings.timeFormat24h = timeFormatSwitch->getValue();
+	savedSettings.alarmEnabled = alarmSwitch->getValue();
 	settings.set(savedSettings);
 	settings.store();
 
@@ -107,6 +116,7 @@ void SettingsScreen::onStarting(){
 	sleepSlider->setValue(sets.sleepTime);
 	motionSwitch->setValue(sets.motionDetection);
 	rotationSwitch->setValue(sets.screenRotate);
+	alarmSwitch->setValue(sets.alarmEnabled);
 }
 
 void SettingsScreen::onStart(){
@@ -247,6 +257,27 @@ void SettingsScreen::buildUI(){
 		});
 	}, false, LV_ALIGN_LEFT_MID);
 	lv_group_add_obj(inputGroup, *manualTime);
+
+	alarmTime = new LabelElement(container, "Set alarm", [this](){
+		auto sets = settings.get();
+		alarmTimeModal = new AlarmTimeModal(this, sets.alarmHour, sets.alarmMinute, [this](uint8_t hour, uint8_t minute){
+			auto sett = settings.get();
+			sett.alarmHour = hour;
+			sett.alarmMinute = minute;
+			settings.set(sett);
+
+			delete alarmTimeModal;
+			alarmTimeModal = nullptr;
+		});
+	}, false, LV_ALIGN_LEFT_MID);
+	lv_group_add_obj(inputGroup, *alarmTime);
+
+	alarmSwitch = new BoolElement(container, "Alarm enabled", [this](bool value){
+		auto s = settings.get();
+		s.alarmEnabled = value;
+		settings.set(s);
+	}, startingSettings.alarmEnabled);
+	lv_group_add_obj(inputGroup, *alarmSwitch);
 
 	audioSwitch = new BoolElement(container, "Sound", [](bool value){
 		if(value){

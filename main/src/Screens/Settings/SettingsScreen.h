@@ -10,6 +10,7 @@
 #include "Devices/IMU.h"
 #include "LV_Interface/LVModal.h"
 #include "TimePickerModal.h"
+#include "AlarmTimeModal.h"
 
 class SettingsScreen : public LVScreen {
 public:
@@ -35,6 +36,8 @@ private:
 	class PickerElement* themePicker = nullptr;
 	PickerElement* dateFormatPicker = nullptr;
 	class LabelElement* manualTime = nullptr;
+	class LabelElement* alarmTime = nullptr;
+	class BoolElement* alarmSwitch = nullptr;
 	class BoolElement* audioSwitch = nullptr;
 	class SliderElement* brightnessSlider = nullptr;
 	BoolElement* ledSwitch = nullptr;
@@ -49,6 +52,7 @@ private:
 	bool shouldTransition = false;
 
 	TimePickerModal* timePickerModal = nullptr;
+	AlarmTimeModal* alarmTimeModal = nullptr;
 
 	static constexpr uint8_t TopPadding = 13;
 	static constexpr const char* ThemeNames = "Default \nTheme 1\nTheme 2\nTheme 3\nTheme 4\nTheme 5\nTheme 6\nTheme 7\nTheme 8";
