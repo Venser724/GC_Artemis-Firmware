@@ -337,7 +337,10 @@ struct SettingsStruct {
 	bool screenRotate = false;
 	bool timeFormat24h = true;
 	DateFormat dateFormat = DateFormat::Regular;
-	ThemeStruct themeData = Default;
+	bool alarmEnabled = false;
+	uint8_t alarmHour = 7;
+	uint8_t alarmMinute = 0;
+	ThemeStruct themeData = Default; // must stay last - only Theme persists to NVS, see Settings::store()
 };
 
 class Settings {

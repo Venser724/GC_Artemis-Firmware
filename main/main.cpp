@@ -31,6 +31,7 @@
 #include "Services/Time.h"
 #include "Services/StatusCenter.h"
 #include "Services/SleepMan.h"
+#include "Services/AlarmManager.h"
 #include "Screens/ShutdownScreen.h"
 #include "Screens/Lock/LockScreen.h"
 #include "JigHWTest/JigHWTest.h"
@@ -166,6 +167,8 @@ void init(){
 	auto rtc = new RTC(*i2c);
 	auto time = new Time(*rtc);
 	Services.set(Service::Time, time); // Time service is required as soon as Phone is up
+
+	auto alarmMan = new AlarmManager(*settings, *time, *sleepMan, *lvgl);
 
 	auto bt = new Bluetooth();
 	auto gap = new BLE::GAP();
