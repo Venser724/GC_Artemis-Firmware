@@ -25,6 +25,7 @@ Both `a-dev` and `i-dev` branch from `master` and should periodically rebase/mer
   - `ESP-IDF.patch` → apply inside `~/esp/esp-idf` (FPU register context-switch fix).
   - `JPEGDEC.patch` → apply inside `components/JPEGDEC`.
   - `LovyanGFX.patch` → apply inside `components/LovyanGFX`.
+- **`components/Perse-Common` submodule is not needed on `a-dev`** (Perse-Ctrl/rover control was stripped there) **but IS needed on `i-dev`/`master`**, which still build the rover screens and `#include <CommData.h>` from it. On a fresh clone (or one that's only ever built `a-dev`), this submodule is often left uninitialized — building `i-dev`/`master` fails with `fatal error: CommData.h: No such file or directory`. Fix: `git submodule update --init components/Perse-Common` (it's a public repo, `git@github.com:CircuitMess/Perse-Common.git`, fetchable read-only), then `idf.py reconfigure` before the next build - CMake's component list is cached and won't pick up a submodule that was empty at the last configure.
 
 ### Typical build/flash session
 
@@ -38,9 +39,19 @@ idf.py -p /dev/cu.usbmodem101 flash   # port varies, check `ls /dev/cu.*`
 
 `idf.py monitor` needs a real TTY and won't run backgrounded — for headless log capture, read the serial port directly with `pyserial` instead (open at 115200 baud).
 
-## Known gotcha: log level vs. `Time` task stack
+## Known gotcha: log level vs. small task stacks
 
-`sdkconfig` ships with `CONFIG_LOG_DEFAULT_LEVEL_WARN` — intentional, not an oversight. The `Time` FreeRTOS task (`main/src/Services/Time.cpp`) only has a 2 KB stack (`SleepyThreaded(UpdateInterval, "Time", 2 * 1024, ...)`). At `WARN`, its `ESP_LOGI` calls never reach the actual `vsnprintf`-style formatting (ESP-IDF checks the tag's level before formatting), so the tight stack is never an issue. Bumping the default level to `INFO` (e.g. for debugging) makes that formatting actually run every 5 seconds inside `Time::sleepyLoop()` and reliably overflows the stack, crashing/rebooting the watch. If you need INFO+ logs for debugging, do it temporarily and revert before considering the build "done" — or raise `Time`'s stack size properly instead of leaving default logging at INFO.
+`sdkconfig` ships with `CONFIG_LOG_DEFAULT_LEVEL_WARN` — intentional, not an oversight. Small-stack `SleepyThreaded`/`Threaded` tasks that only ever log at `ESP_LOGI`/`DEBUG` (like `Time`, `main/src/Services/Time.cpp`, 2 KB stack) never actually pay for it: at `WARN`, ESP-IDF checks the tag's level *before* running the `vsnprintf`-style formatting, so those calls are free. But this cuts the other way too - a small-stack task that logs at `ESP_LOGW`/`ESP_LOGE` (i.e. at or above the default level) pays the full formatting cost on every call, on that task's own tiny stack, right now, without anyone touching the global log level.
+
+Confirmed twice: bumping the project's default level to `INFO` makes `Time`'s normally-filtered `ESP_LOGI` calls format for real every 5 seconds inside `Time::sleepyLoop()`, overflowing its 2 KB stack. Separately (2026-07-09), giving `AlarmManager` (`main/src/Services/AlarmManager.cpp`) a `Time`-sized 2 KB stack and adding `ESP_LOGW` calls with format args for hardware-verification debugging overflowed it immediately, corrupting unrelated FreeRTOS queues/semaphores elsewhere in the heap (asserts in `xQueueGenericSend`/`xQueueSemaphoreTake`, reboot) - AlarmManager now runs on 4 KB.
+
+**Rule of thumb:** a small (~2 KB) stack is only safe for a task whose logging is entirely below the project's default level (so it's filtered pre-formatting). Any task that logs at `WARN`+ - even temporarily, even just for debugging - needs real headroom (4 KB+). If you need temporary debug logging on a small-stack task, either bump the stack first or keep the debug calls at a level below the default (so they stay filtered) rather than assuming a small stack is fine because another task's logging is.
+
+## Known gotcha: `LVGL` is not thread-safe
+
+`main/src/LV_Interface/LVGL.cpp` has its own commented-out `TODO this rly should have a lock on it` - `LVGL::loop()` (the render loop, `lv_timer_handler()`) and `LVGL::startScreen()`/`stopScreen()` have no locking and are only safe to call from the LVGL task itself. Every existing caller happens to satisfy this already: `SleepMan::goSleep()`'s wake callback runs synchronously inside `LVGL::loop()` (via `sleep->loop()`, called from there each tick), and `main.cpp`'s `shutdown()` happens to run before the LVGL task even starts its loop.
+
+Confirmed live (2026-07-09): giving `AlarmManager` - a genuinely separate background task - a direct `lvgl.startScreen(...)` call to force `AlarmScreen` on top crashed with a FreeRTOS queue assert (`xQueueGenericSend`) and rebooted the watch, because it raced against the LVGL task's own render loop. Fix pattern: don't call into `LVGL` from another task at all - add a thread-safe flag/request (`LVGL::requestAlarmScreen()`, a `volatile bool` set by the other task, consumed inside `LVGL::loop()` on the correct thread) and let `LVGL::loop()` perform the actual `startScreen()` call itself, the same way it already does for `SleepMan`.
 
 ## Confirmed fixes already on `master`
 
@@ -101,7 +112,9 @@ To cut a new release from any branch: tag the commit (`git tag -a <branch>-vX.Y 
 
 ## Current project goals
 
-Build out `a-dev` and `i-dev` into genuinely different firmware per use case — different watch faces, different feature sets — sharing only the general-purpose fixes that land on `master`. Nothing platform-specific has been designed yet beyond the device-name change on `a-dev`.
+Build out `a-dev` and `i-dev` into genuinely different firmware per use case — different watch faces, different feature sets — sharing only the general-purpose fixes that land on `master`. Features from either branch's wishlist stay branch-exclusive by design, even when fully platform-agnostic (e.g. the `i-dev` alarm below has zero phone-side dependency, but was deliberately kept off `a-dev`/`master` rather than shared) - only genuine bug/correctness fixes are meant to cross over via `master`.
+
+**`i-dev` local alarm** (2026-07-09, first feature beyond the `a-dev` device-name change): `Settings` gained `alarmEnabled`/`alarmHour`/`alarmMinute`; `AlarmManager` (`main/src/Services/AlarmManager.h/.cpp`) checks once a minute and fires `AlarmScreen` (`main/src/Screens/AlarmScreen.h/.cpp` - repeating buzzer/LED, hold-Alt-to-dismiss, 60s auto-stop) whether the watch is awake or asleep at the time; `AlarmTimeModal` in Settings sets it. Verified live end-to-end on hardware. See the `LVGL` thread-safety and stack-vs-log-level gotchas above - both were hit and fixed while building this.
 
 ## `a-dev` protocol decision: stay on Bangle/GadgetBridge, don't adopt `AndroidProto`
 
