@@ -31,6 +31,7 @@ private:
 	void handle_notify(const std::string& prop);
 	void handle_notifyDel(uint32_t id);
 	void handle_call(const std::string& line);
+	void handle_weather(const std::string& line);
 
 	static std::string getProperty(const std::string& line, std::string prop);
 

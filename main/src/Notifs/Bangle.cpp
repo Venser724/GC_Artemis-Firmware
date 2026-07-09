@@ -1,6 +1,7 @@
 #include "Bangle.h"
 #include "Util/Services.h"
 #include "Services/Time.h"
+#include "Services/Weather.h"
 #include <mjson.h>
 #include <esp_log.h>
 #include <cmath>
@@ -82,6 +83,7 @@ const std::unordered_map<Bangle::CallState, Bangle::CallInfo> Bangle::CallInfoMa
 
 
 Bangle::Bangle(BLE::Server* server) : Threaded("Bangle", 4 * 1024), server(server), uart(server){
+	esp_log_level_set(TAG, ESP_LOG_VERBOSE); // debug: default is WARN project-wide, this only raises our own tag
 	server->setOnDisconnectCb([this](const esp_bd_addr_t addr){ onDisconnect(); });
 	start();
 }
@@ -241,7 +243,8 @@ void Bangle::handleCommand(const std::string& line){
 
 				handle_notifyDel(id);
 			} },
-			{ "call",          [this](const std::string& line){ handle_call(line); } }
+			{ "call",          [this](const std::string& line){ handle_call(line); } },
+			{ "weather",       [this](const std::string& line){ handle_weather(line); } }
 	};
 
 	auto handler = handlers.find(t);
@@ -391,6 +394,31 @@ void Bangle::handle_call(const std::string& line){
 	};
 
 	notifModify(notif);
+}
+
+void Bangle::handle_weather(const std::string& line){
+	double temp, code;
+	int hasTemp = mjson_get_number(line.c_str(), line.size(), "$.temp", &temp);
+	int hasCode = mjson_get_number(line.c_str(), line.size(), "$.code", &code);
+	if(!hasTemp || !hasCode){
+		ESP_LOGW(TAG, "Received weather without temp/code");
+		return;
+	}
+
+	auto* weather = (Weather*) Services.get(Service::Weather);
+	if(weather == nullptr) return;
+
+	// GadgetBridge sends temp/hi/lo in Kelvin (Bangle.js "weather" v1 message format)
+	auto tempCelsius = (int8_t) std::lround(temp - 273.15);
+
+	double hi, lo, rain;
+	auto hiCelsius = (int8_t) (mjson_get_number(line.c_str(), line.size(), "$.hi", &hi) ? std::lround(hi - 273.15) : tempCelsius);
+	auto loCelsius = (int8_t) (mjson_get_number(line.c_str(), line.size(), "$.lo", &lo) ? std::lround(lo - 273.15) : tempCelsius);
+	auto rainPercent = (uint8_t) (mjson_get_number(line.c_str(), line.size(), "$.rain", &rain) ? std::lround(rain) : 0);
+
+	weather->set(Weather::fromOpenWeatherMapCode((int) code), tempCelsius, hiCelsius, loCelsius, rainPercent);
+
+	ESP_LOGI(TAG, "Weather: %d C (hi %d, lo %d), rain %d%%, code %d", tempCelsius, hiCelsius, loCelsius, rainPercent, (int) code);
 }
 
 std::string Bangle::getProperty(const std::string& line, std::string prop){
