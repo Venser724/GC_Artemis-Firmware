@@ -28,6 +28,8 @@ struct ThemeStruct {
 	lv_coord_t phoneY = 0;
 	lv_coord_t dateX = 0;
 	lv_coord_t dateY = 0;
+	lv_coord_t weatherX = 0;
+	lv_coord_t weatherY = 0;
 	bool verticalClock = false;
 	int16_t clockPadding = 0;
 	bool specialPhone = false;
@@ -67,9 +69,10 @@ inline static ThemeStruct createTheme(Theme theme){
 			data.batteryY = 4;
 			data.phoneX = 56;
 			data.phoneY = -57;
-			data.notifData.y = 32;
+			data.notifData.y = -57; // top row, alongside battery/phone indicators
 			data.notifData.gapPad = 3;
 			data.dateY = 14;
+			data.weatherY = 32; // shares the old notif icons row, below the date
 			data.notifData.maxNotifs = 10;
 
 			break;

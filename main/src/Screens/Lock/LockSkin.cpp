@@ -5,6 +5,7 @@
 #include "LV_Interface/InputLVGL.h"
 #include "Screens/MainMenu/MenuBatteryElement.h"
 #include "UIElements/NotifIconsElement.h"
+#include "Services/Weather.h"
 #include "Theme/theme.h"
 
 LockSkin::LockSkin(lv_obj_t* parent, lv_group_t* inputGroup) : LVObject(parent), inputGroup(inputGroup){
@@ -35,6 +36,7 @@ void LockSkin::loop(){
 	}
 
 	setDateLabel();
+	updateWeather();
 }
 
 void LockSkin::prepare(){
@@ -59,6 +61,7 @@ void LockSkin::prepare(){
 		clock->loop();
 	}
 
+	updateWeather();
 	updateNotifs();
 }
 
@@ -238,12 +241,12 @@ void LockSkin::buildUI(){
 	lv_obj_set_style_text_color(date, themeData.dateColor, 0);
 	setDateLabel();
 
-	// shares the notif icons row: weather icon pinned left, temp pinned right, bell icons centered - see WeatherElement
+	// weather icon pinned left, temp pinned right within its own row - see WeatherElement
 	weather = new WeatherElement(main);
 	lv_obj_set_align(*weather, LV_ALIGN_CENTER);
-	lv_obj_set_x(*weather, themeData.notifData.x);
-	lv_obj_set_y(*weather, themeData.notifData.y);
-	weather->set(WeatherElement::Condition::Snowy, 22); // placeholder until Wi-Fi/API backend exists
+	lv_obj_set_x(*weather, themeData.weatherX);
+	lv_obj_set_y(*weather, themeData.weatherY);
+	updateWeather(); // picks up data if GadgetBridge already sent it before this screen was built
 
 	locker = new Slider(main, themeData.sliderConfig);
 	lv_obj_set_y(*locker, themeData.sliderY);
@@ -291,6 +294,30 @@ void LockSkin::buildUI(){
 	lv_group_set_wrap(inputGroup, false);
 	lv_obj_add_flag(main, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
 	lv_obj_clear_flag(main, LV_OBJ_FLAG_SCROLLABLE);
+}
+
+void LockSkin::updateWeather(){
+	if(weather == nullptr){
+		return;
+	}
+
+	Weather* weatherService = (Weather*) Services.get(Service::Weather);
+	if(weatherService == nullptr){
+		return;
+	}
+
+	Weather::State state = weatherService->get();
+	if(!state.valid){
+		return;
+	}
+
+	if(lastWeather.valid && state.condition == lastWeather.condition && state.tempCelsius == lastWeather.tempCelsius &&
+	   state.hiCelsius == lastWeather.hiCelsius && state.loCelsius == lastWeather.loCelsius && state.rainPercent == lastWeather.rainPercent){
+		return;
+	}
+
+	weather->set(state.condition, state.tempCelsius, state.hiCelsius, state.loCelsius, state.rainPercent);
+	lastWeather = state;
 }
 
 void LockSkin::setDateLabel(){

@@ -35,6 +35,7 @@ private:
 	lv_obj_t* notifList = nullptr;
 	lv_obj_t* date = nullptr;
 	WeatherElement* weather = nullptr;
+	Weather::State lastWeather;
 
 	static constexpr uint8_t MaxNotifs = Phone::MaxNotifs;
 	std::unordered_map<uint32_t, Item*> notifs;
@@ -45,6 +46,7 @@ private:
 	void updateNotifs();
 	void buildUI();
 	void setDateLabel();
+	void updateWeather();
 };
 
 #endif //ARTEMIS_FIRMWARE_LOCKSKIN_H
