@@ -1,6 +1,7 @@
 #include "SleepMan.h"
 #include <esp_log.h>
 #include "Screens/Lock/LockScreen.h"
+#include "Screens/AlarmScreen.h"
 #include "Util/Services.h"
 #include "Screens/ShutdownScreen.h"
 #include <esp_sleep.h>
@@ -78,7 +79,12 @@ void SleepMan::goSleep(){
 		}
 
 		if(!nsBlocked){
-			lvgl.startScreen([](){ return std::make_unique<LockScreen>(); });
+			if(pendingAlarm){
+				pendingAlarm = false;
+				lvgl.startScreen([](){ return std::make_unique<AlarmScreen>(); });
+			}else{
+				lvgl.startScreen([](){ return std::make_unique<LockScreen>(); });
+			}
 		}
 		lv_timer_handler();
 	});
@@ -107,6 +113,15 @@ void SleepMan::wake(bool blockLock){
 	if(!inSleep) return;
 	nsBlocked = blockLock;
 	xSemaphoreGive(sleep.wakeSem);
+}
+
+bool SleepMan::isAsleep() const{
+	return inSleep;
+}
+
+void SleepMan::wakeForAlarm(){
+	pendingAlarm = true;
+	wake();
 }
 
 void SleepMan::shutdown(){

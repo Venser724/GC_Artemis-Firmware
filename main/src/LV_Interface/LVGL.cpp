@@ -4,6 +4,7 @@
 #include "InputLVGL.h"
 #include "Util/Services.h"
 #include "Services/SleepMan.h"
+#include "Screens/AlarmScreen.h"
 
 LVGL::LVGL(Display& display) : Threaded("LVGL", 8 * 1024, 6, 1), display(display){
 	lv_init();
@@ -37,10 +38,19 @@ void LVGL::flush(lv_disp_drv_t* dispDrv, const lv_area_t* area, lv_color_t* pixe
 	lv_disp_flush_ready(dispDrv);
 }
 
+void LVGL::requestAlarmScreen(){
+	alarmPending = true;
+}
+
 void LVGL::loop(){
 	auto sleep = (SleepMan*) Services.get(Service::Sleep);
 	if(sleep){
 		sleep->loop();
+	}
+
+	if(alarmPending){
+		alarmPending = false;
+		startScreen([](){ return std::make_unique<AlarmScreen>(); });
 	}
 
 	// TODO this rly should have a lock on it, but unfortunately the system is made this way:

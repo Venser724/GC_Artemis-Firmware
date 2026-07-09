@@ -21,8 +21,15 @@ public:
 
 	void rotateScreen(bool rotation);
 
+	// Thread-safe: LVGL itself (startScreen/stopScreen/lv_timer_handler) is not safe to call from
+	// any task other than the LVGL task. This lets another task (AlarmManager) request AlarmScreen
+	// without touching LVGL directly - loop() picks it up and starts it on the correct thread.
+	void requestAlarmScreen();
+
 private:
 	Display& display;
+
+	volatile bool alarmPending = false;
 
 	static constexpr uint8_t Rows = 32;
 	uint8_t drawBuffer[2*128*Rows];

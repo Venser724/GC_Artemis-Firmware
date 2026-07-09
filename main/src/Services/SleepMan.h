@@ -23,6 +23,9 @@ public:
 	void imuSignal();
 	void shutdown();
 
+	bool isAsleep() const;
+	void wakeForAlarm();
+
 private:
 
 	Sleep sleep;
@@ -53,6 +56,7 @@ private:
 	uint32_t altPress;
 
 	volatile bool nsBlocked = false;
+	volatile bool pendingAlarm = false;
 
 	//if sleep is caused by btn press, register for Lowered event instead of Lifted, then clear this flag when Lowered occurs
 	bool waitForLower = false;
