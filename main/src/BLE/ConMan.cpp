@@ -38,6 +38,10 @@ void ConManager::goHiPow(){
 }
 
 void ConManager::setAdv(){
+	// Sleep/wake (goLowPow/goHiPow) calls this whenever !connected, which includes right after
+	// a disconnect already restarted advertising - stop first so we don't ask the controller to
+	// start advertising while a previous session (possibly with different params) is still active.
+	esp_ble_gap_stop_advertising();
 	esp_ble_gap_start_advertising((esp_ble_adv_params_t*) (lowPow ? &AdvLowPow : &AdvHiPow));
 }
 
