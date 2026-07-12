@@ -2,6 +2,7 @@
 #define ARTEMIS_FIRMWARE_WEATHER_H
 
 #include <cstdint>
+#include <nvs.h>
 
 class Weather {
 public:
@@ -18,6 +19,8 @@ public:
 		uint8_t rainPercent = 0;
 	};
 
+	Weather();
+
 	void set(Condition condition, int8_t tempCelsius, int8_t hiCelsius, int8_t loCelsius, uint8_t rainPercent);
 	State get() const;
 
@@ -28,6 +31,15 @@ public:
 
 private:
 	State state;
+	nvs_handle_t handle{};
+
+	// Persisted in NVS (not just kept in RAM) so the lock screen still has last-known
+	// weather to show right after a reboot, instead of blank until the next GadgetBridge sync.
+	void load();
+	void store();
+
+	static constexpr const char* NVSNamespace = "Artemis";
+	static constexpr const char* BlobName = "Weather";
 };
 
 
