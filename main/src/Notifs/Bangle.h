@@ -55,7 +55,7 @@ private:
 
 	std::unordered_set<uint32_t> missedCalls;
 
-	float timeOffset = 0;
+	double timeOffset = 0;
 	uint64_t timeUnix = 0;
 
 	void setTime();
