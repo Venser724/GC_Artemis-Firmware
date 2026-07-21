@@ -16,6 +16,14 @@ Both `a-dev` and `i-dev` branch from `master` and should periodically rebase/mer
 - `circuitmess` — official upstream (`CircuitMess/GC_Artemis-Firmware`). Read-only reference; never push here without explicit instruction. Has an `AndroidProto` branch with unreleased Android-specific work (media info handling) worth checking before reimplementing anything similar on `a-dev`.
 - `upstream` — `CircuitMess/Clockstar-Firmware`, the base project this firmware line was originally forked from. Reference only.
 
+## Session start: check the connected watch
+
+At the start of a work session, before diving into the task, check whether a watch is plugged in and which one:
+
+1. `ls /dev/cu.usbmodem*` — is a watch connected? If not, skip the rest.
+2. If connected, identify it by its app version in `esp_app_desc` (near flash `0x10020`): `a-dev-v…` is Venser's own Android watch; `v2.1.1-…-g<sha>` (git-describe off the upstream tag, since `i-dev` has no tags of its own) is the `i-dev` / girlfriend's iPhone watch. Reading flash briefly resets the watch — harmless.
+3. **If it is Venser's (a-dev) watch, proactively look for trouble right away — don't wait to be asked.** Read the coredump partition (`0x3be000`, 256K): a header that is not all `0xFF` means a crash was recorded — decode it against the matching `build/Artemis-Firmware.elf` and report the backtrace. Also note the boot reset reason. This only works while coredump-to-flash is enabled in the flashed build.
+
 ## Build environment
 
 - ESP-IDF pinned to commit `3a45d4e949a174e8829a2e4c86c421b030ceac5a` (per upstream README — labeled "v5.1" by CircuitMess, reports as `v5.2-dev-*` via `git describe` since it's a pre-release snapshot). Cloned at `~/esp/esp-idf` (shared, not inside this repo).
