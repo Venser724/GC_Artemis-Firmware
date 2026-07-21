@@ -6,6 +6,7 @@
 #include "Services/Time.h"
 #include "BacklightBrightness.h"
 #include "Pins.hpp"
+#include <esp_pm.h>
 
 class SleepMan;
 
@@ -24,6 +25,7 @@ friend SleepMan;
 	DRAM_ATTR static gpio_num_t WakePin;
 
 	SemaphoreHandle_t wakeSem;
+	esp_pm_lock_handle_t noLightSleepLock = nullptr;
 	static void intr(void* arg);
 
 	void sleepStart();

@@ -15,7 +15,23 @@ gpio_num_t Sleep::WakePin;
 
 Sleep::Sleep(){
 	WakePin = (gpio_num_t) Pins::get(Pin::BtnAlt);
-	confPM(false, true);
+
+	// Hold "no light sleep" by default (active use), then configure PM once with light sleep
+	// enabled - this allocates the CPU power-down retention buffer (MALLOC_CAP_RETENTION) a
+	// single time. confPM() then only acquires/releases this lock per sleep/wake instead of
+	// re-running esp_pm_configure, whose per-cycle alloc+free of that buffer fragmented the small
+	// retention pool until an 8800-byte allocation failed -> panic in the motion-triggered sleep
+	// path (the intermittent spontaneous reboots). Sleep.cpp is shared with master; fix belongs there too.
+	ESP_ERROR_CHECK(esp_pm_lock_create(ESP_PM_NO_LIGHT_SLEEP, 0, "sleepNoLS", &noLightSleepLock));
+	esp_pm_lock_acquire(noLightSleepLock);
+
+	esp_pm_config_t pm_config = {
+			.max_freq_mhz = 240,
+			.min_freq_mhz = 240,
+			.light_sleep_enable = true
+	};
+	ESP_ERROR_CHECK(esp_pm_configure(&pm_config));
+
 	wakeSem = xSemaphoreCreateBinary();
 }
 
@@ -110,10 +126,11 @@ void Sleep::confPM(bool sleep, bool firstTime){
 		}
 	}
 
-	esp_pm_config_t pm_config = {
-			.max_freq_mhz = 240, // e.g. 80, 160, 240
-			.min_freq_mhz = 240, // e.g. 40
-			.light_sleep_enable = sleep // enable light sleep
-	};
-	ESP_ERROR_CHECK(esp_pm_configure(&pm_config));
+	// PM is configured once in the ctor; gate light sleep with the lock instead of re-configuring
+	// (which alloc/freed the retention buffer each cycle and fragmented the pool -> alloc-fail panic).
+	if(sleep){
+		esp_pm_lock_release(noLightSleepLock); // allow light sleep for this sleep window
+	}else{
+		esp_pm_lock_acquire(noLightSleepLock); // block light sleep during active use
+	}
 }
