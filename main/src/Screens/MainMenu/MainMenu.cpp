@@ -6,6 +6,7 @@
 #include "Screens/Theremin/Theremin.h"
 #include "Screens/PerseCtrl/PerseCtrlScreen.h"
 #include "Screens/Settings/SettingsScreen.h"
+#include "Screens/MusicScreen.h"
 #include "Util/stdafx.h"
 #include "LV_Interface/InputLVGL.h"
 #include "Screens/Lander/LunarLander.h"
@@ -209,7 +210,8 @@ void MainMenu::onClick(){
 			[this](){ transition([](){ return std::make_unique<Theremin>(); }); },
 			[](){ },
 			[this](){ transition([](){ return std::make_unique<PerseCtrlScreen>(); }); },
-			[this](){ transition([](){ return std::make_unique<SettingsScreen>(); }); }
+			[this](){ transition([](){ return std::make_unique<SettingsScreen>(); }); },
+			[this](){ transition([](){ return std::make_unique<MusicScreen>(); }); }
 	};
 
 	launcher[index]();

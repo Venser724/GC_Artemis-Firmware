@@ -6,6 +6,7 @@
 #include "Bangle.h"
 #include "ANCS/Client.h"
 #include "CurrentTime.h"
+#include "AMS/Client.h"
 #include "NotifSource.h"
 #include <deque>
 
@@ -45,6 +46,7 @@ private:
 	ANCS::Client ancs;
 	CurrentTime cTime;
 	Bangle bangle;
+	AMS::Client ams;
 
 	NotifSource* current = nullptr;
 
