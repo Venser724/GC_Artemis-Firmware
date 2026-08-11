@@ -4,6 +4,7 @@
 #include "Services/Time.h"
 #include "Util/stdafx.h"
 #include "Screens/MainMenu/MainMenu.h"
+#include "Screens/MusicScreen.h"
 #include "Services/SleepMan.h"
 #include "LV_Interface/FSLVGL.h"
 #include "LV_Interface/InputLVGL.h"
@@ -66,11 +67,6 @@ void LockScreen::prepare(){
 void LockScreen::loop(){
 	if(skin != nullptr){
 		skin->loop();
-
-		if(skin->getLocker() != nullptr && skin->getLocker()->t() >= 1){
-			transition([](){ return std::make_unique<MainMenu>(); });
-			return;
-		}
 	}
 
 	if(millis() - lastTimeUpdate > TimeUpdateInterval){
@@ -107,16 +103,10 @@ void LockScreen::processInput(const Input::Data& evt){
 
 	if(lv_group_get_focused(inputGroup) != skin->getMain()) return;
 
-	if(evt.btn == Input::Select){
-		if(evt.action == Input::Data::Press){
-			skin->getLocker()->start();
-		}else if(evt.action == Input::Data::Release){
-			bool hide = skin->getLocker()->t() < 0.05;
-			skin->getLocker()->stop();
-			if(hide){
-				skin->getLocker()->hide();
-			}
-		}
+	if(evt.btn == Input::Select && evt.action == Input::Data::Press){
+		transition([](){ return std::make_unique<MainMenu>(); });
+	}else if(evt.btn == Input::Up && evt.action == Input::Data::Press){
+		transition([](){ return std::make_unique<MusicScreen>(); });
 	}
 }
 
