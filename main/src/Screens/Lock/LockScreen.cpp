@@ -66,11 +66,6 @@ void LockScreen::prepare(){
 void LockScreen::loop(){
 	if(skin != nullptr){
 		skin->loop();
-
-		if(skin->getLocker() != nullptr && skin->getLocker()->t() >= 1){
-			transition([](){ return std::make_unique<MainMenu>(); });
-			return;
-		}
 	}
 
 	if(millis() - lastTimeUpdate > TimeUpdateInterval){
@@ -107,16 +102,8 @@ void LockScreen::processInput(const Input::Data& evt){
 
 	if(lv_group_get_focused(inputGroup) != skin->getMain()) return;
 
-	if(evt.btn == Input::Select){
-		if(evt.action == Input::Data::Press){
-			skin->getLocker()->start();
-		}else if(evt.action == Input::Data::Release){
-			bool hide = skin->getLocker()->t() < 0.05;
-			skin->getLocker()->stop();
-			if(hide){
-				skin->getLocker()->hide();
-			}
-		}
+	if(evt.btn == Input::Select && evt.action == Input::Data::Press){
+		transition([](){ return std::make_unique<MainMenu>(); });
 	}
 }
 
