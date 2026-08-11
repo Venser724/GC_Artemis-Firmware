@@ -4,6 +4,7 @@
 #include "Services/Time.h"
 #include "Util/stdafx.h"
 #include "Screens/MainMenu/MainMenu.h"
+#include "Screens/MusicScreen.h"
 #include "Services/SleepMan.h"
 #include "LV_Interface/FSLVGL.h"
 #include "LV_Interface/InputLVGL.h"
@@ -104,6 +105,8 @@ void LockScreen::processInput(const Input::Data& evt){
 
 	if(evt.btn == Input::Select && evt.action == Input::Data::Press){
 		transition([](){ return std::make_unique<MainMenu>(); });
+	}else if(evt.btn == Input::Up && evt.action == Input::Data::Press){
+		transition([](){ return std::make_unique<MusicScreen>(); });
 	}
 }
 
