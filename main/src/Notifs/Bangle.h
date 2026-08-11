@@ -4,6 +4,7 @@
 #include "Notifs/NotifSource.h"
 #include "BLE/Server.h"
 #include "BLE/UART.h"
+#include "GBMusic.h"
 #include <map>
 
 class Bangle : public NotifSource, private Threaded {
@@ -17,9 +18,12 @@ public:
 	void findPhoneStart();
 	void findPhoneStop();
 
+	inline Media& getMusic() noexcept { return music; }
+
 private:
 	BLE::Server* server;
 	BLE::UART uart;
+	GBMusic music;
 
 	void loop() override;
 
@@ -32,6 +36,9 @@ private:
 	void handle_notifyDel(uint32_t id);
 	void handle_call(const std::string& line);
 	void handle_weather(const std::string& line);
+	void handle_musicinfo(const std::string& line);
+	void handle_musicstate(const std::string& line);
+	void sendMusicCommand(Media::Command cmd);
 
 	static std::string getProperty(const std::string& line, std::string prop);
 

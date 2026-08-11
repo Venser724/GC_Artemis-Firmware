@@ -85,6 +85,7 @@ const std::unordered_map<Bangle::CallState, Bangle::CallInfo> Bangle::CallInfoMa
 Bangle::Bangle(BLE::Server* server) : Threaded("Bangle", 4 * 1024), server(server), uart(server){
 	esp_log_level_set(TAG, ESP_LOG_VERBOSE); // debug: default is WARN project-wide, this only raises our own tag
 	server->setOnDisconnectCb([this](const esp_bd_addr_t addr){ onDisconnect(); });
+	music.setSender([this](Media::Command cmd){ sendMusicCommand(cmd); });
 	start();
 }
 
@@ -244,7 +245,9 @@ void Bangle::handleCommand(const std::string& line){
 				handle_notifyDel(id);
 			} },
 			{ "call",          [this](const std::string& line){ handle_call(line); } },
-			{ "weather",       [this](const std::string& line){ handle_weather(line); } }
+			{ "weather",       [this](const std::string& line){ handle_weather(line); } },
+			{ "musicinfo",     [this](const std::string& line){ handle_musicinfo(line); } },
+			{ "musicstate",    [this](const std::string& line){ handle_musicstate(line); } }
 	};
 
 	auto handler = handlers.find(t);
@@ -419,6 +422,41 @@ void Bangle::handle_weather(const std::string& line){
 	weather->set(Weather::fromOpenWeatherMapCode((int) code), tempCelsius, hiCelsius, loCelsius, rainPercent);
 
 	ESP_LOGI(TAG, "Weather: %d C (hi %d, lo %d), rain %d%%, code %d", tempCelsius, hiCelsius, loCelsius, rainPercent, (int) code);
+}
+
+void Bangle::handle_musicinfo(const std::string& line){
+	auto track = getProperty(line, "track");
+	auto artist = getProperty(line, "artist");
+	music.setTrack(track, artist);
+
+	ESP_LOGI(TAG, "Music info: %s - %s", artist.c_str(), track.c_str());
+}
+
+void Bangle::handle_musicstate(const std::string& line){
+	auto state = getProperty(line, "state");
+	music.setPlaying(state == "play");
+
+	ESP_LOGI(TAG, "Music state: %s", state.c_str());
+}
+
+void Bangle::sendMusicCommand(Media::Command cmd){
+	if(!connected) return;
+
+	switch(cmd){
+		case Media::Command::Next:
+			uart.printf("{t:\"music\",n:\"next\"} \n");
+			break;
+		case Media::Command::Previous:
+			uart.printf("{t:\"music\",n:\"previous\"} \n");
+			break;
+		case Media::Command::TogglePlayPause: {
+			// Bangle's protocol has no toggle command - GadgetBridge only takes discrete
+			// play/pause, so pick the opposite of the last state we were told about.
+			bool playing = music.get().playing;
+			uart.printf("{t:\"music\",n:\"%s\"} \n", playing ? "pause" : "play");
+			break;
+		}
+	}
 }
 
 std::string Bangle::getProperty(const std::string& line, std::string prop){

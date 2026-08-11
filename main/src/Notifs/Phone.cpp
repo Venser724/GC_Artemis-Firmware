@@ -1,7 +1,10 @@
 #include "Phone.h"
 #include "Util/Events.h"
+#include "Util/Services.h"
 
 Phone::Phone(BLE::Server* server, BLE::Client* client) : ancs(client), cTime(client), bangle(server){
+	Services.set(Service::Media, &bangle.getMusic());
+
 	auto reg = [this](NotifSource* src){
 		src->setOnConnect([this, src](){ onConnect(src); });
 		src->setOnDisconnect([this, src](){ onDisconnect(src); });
