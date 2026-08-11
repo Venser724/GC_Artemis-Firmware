@@ -6,7 +6,7 @@
 #include <string>
 
 // Now-playing screen fed by Service::Media (GBMusic, populated from GadgetBridge's musicinfo/
-// musicstate over the Bangle link on a-dev). Up = next, Down = prev, Select = play/pause,
+// musicstate over the Bangle link on a-dev). Down = next, Up = prev, Select = play/pause,
 // Alt = back to the lock screen. Track/artist use the Cyrillic-capable devin font.
 class MusicScreen : public LVScreen {
 public:

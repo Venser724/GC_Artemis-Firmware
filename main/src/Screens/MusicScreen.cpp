@@ -95,8 +95,8 @@ void MusicScreen::handleInput(){
 				}
 				if(media != nullptr){
 					switch(data->btn){
-						case Input::Up:     media->sendCommand(Media::Command::Next); break;
-						case Input::Down:   media->sendCommand(Media::Command::Previous); break;
+						case Input::Down:   media->sendCommand(Media::Command::Next); break;
+						case Input::Up:     media->sendCommand(Media::Command::Previous); break;
 						case Input::Select: media->sendCommand(Media::Command::TogglePlayPause); break;
 						default: break;
 					}
