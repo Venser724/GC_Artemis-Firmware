@@ -3,6 +3,8 @@
 #include <nvs_flash.h>
 #include <bootloader_random.h>
 #include <esp_random.h>
+#include <esp_system.h>
+#include <esp_heap_caps.h>
 #include <Devices/BatteryV2.h>
 #include <Devices/BatteryV3.h>
 
@@ -43,6 +45,44 @@ LVGL* lvgl;
 BacklightBrightness* bl;
 SleepMan* sleepMan;
 
+// --- crash / memory diagnostics (persistent, kept on to catch any regression) ---
+static const char* resetReasonStr(esp_reset_reason_t r){
+	switch(r){
+		case ESP_RST_POWERON:   return "POWERON";
+		case ESP_RST_EXT:       return "EXT";
+		case ESP_RST_SW:        return "SW";
+		case ESP_RST_PANIC:     return "PANIC";
+		case ESP_RST_INT_WDT:   return "INT_WDT";
+		case ESP_RST_TASK_WDT:  return "TASK_WDT";
+		case ESP_RST_WDT:       return "OTHER_WDT";
+		case ESP_RST_DEEPSLEEP: return "DEEPSLEEP";
+		case ESP_RST_BROWNOUT:  return "BROWNOUT";
+		case ESP_RST_SDIO:      return "SDIO";
+		case ESP_RST_USB:       return "USB";
+		default:                return "UNKNOWN";
+	}
+}
+
+[[noreturn]] static void heapDiagTask(void*){
+	while(true){
+		// total = internal+PSRAM (PSRAM dominates ~2 MB and would mask a leak);
+		// internal RAM (~300 KB) is the scarce pool where a notification leak bites.
+		// retention pool included to verify the sleep fix: with light-sleep PM configured once,
+		// the CPU-retention buffer is allocated a single time, so these should stay constant across
+		// sleep/wake cycles instead of the largest block shrinking (the fragmentation that crashed us).
+		printf("[DIAG] total free=%u min=%u largest=%u | internal free=%u min=%u largest=%u | retention free=%u largest=%u\n",
+			   (unsigned) esp_get_free_heap_size(),
+			   (unsigned) esp_get_minimum_free_heap_size(),
+			   (unsigned) heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT),
+			   (unsigned) heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+			   (unsigned) heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL),
+			   (unsigned) heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL),
+			   (unsigned) heap_caps_get_free_size(MALLOC_CAP_RETENTION),
+			   (unsigned) heap_caps_get_largest_free_block(MALLOC_CAP_RETENTION));
+		vTaskDelay(pdMS_TO_TICKS(10000));
+	}
+}
+
 void shutdown(){
 	lvgl->startScreen([](){ return std::make_unique<ShutdownScreen>(); });
 
@@ -80,6 +120,10 @@ void setLEDs(){
 }
 
 void init(){
+	esp_reset_reason_t resetReason = esp_reset_reason();
+	printf("[DIAG] boot reset_reason=%d (%s) free_heap=%u\n",
+		   (int) resetReason, resetReasonStr(resetReason), (unsigned) esp_get_free_heap_size());
+
 	setLEDs();
 	gpio_install_isr_service(ESP_INTR_FLAG_LOWMED | ESP_INTR_FLAG_IRAM);
 
@@ -203,6 +247,10 @@ void init(){
 	// Start Battery scanning after everything else, otherwise Critical
 	// Battery event might come while initialization is still in progress
 	battery->begin();
+
+	// periodic heap/fragmentation logger (own task; NOT the 2 KB Time task,
+	// whose stack would overflow if a printing log ran there)
+	xTaskCreate(heapDiagTask, "heapDiag", 3072, nullptr, 1, nullptr);
 }
 
 extern "C" void app_main(void){
