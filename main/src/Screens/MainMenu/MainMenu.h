@@ -32,11 +32,12 @@ private:
 		const char* iconPath = nullptr;
 		const char* iconAltPath = nullptr;
 	};
-	ItemInfo ItemInfos[4] = {
+	ItemInfo ItemInfos[5] = {
 			{ "Find my phone",    "Ringing phone...",                     File::Menu::Theme1::Find,       File::Menu::Theme1::Find },
 			{ "Level",            nullptr,                                File::Menu::Theme1::Level,      nullptr },
 			{ "Phone connection", ConnDesc[(int) Phone::PhoneType::None], File::Menu::Theme1::Connection, File::Menu::Theme1::Connection },
-			{ "Settings",         nullptr,                                File::Menu::Theme1::Settings,   nullptr }
+			{ "Settings",         nullptr,                                File::Menu::Theme1::Settings,   nullptr },
+			{ "Music",            nullptr,                                File::Menu::Theme1::Notification, nullptr } // TODO: dedicated music-note icon, borrowing the notification bell for now
 	};
 	static constexpr uint8_t ItemCount = sizeof(ItemInfos) / sizeof(ItemInfos[0]);
 	void setupItemPaths(Theme theme);

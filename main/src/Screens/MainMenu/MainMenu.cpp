@@ -4,6 +4,7 @@
 #include "Screens/Lock/LockScreen.h"
 #include "Screens/Level.h"
 #include "Screens/Settings/SettingsScreen.h"
+#include "Screens/MusicScreen.h"
 #include "Util/stdafx.h"
 #include "LV_Interface/InputLVGL.h"
 #include "Services/StatusCenter.h"
@@ -130,6 +131,7 @@ void MainMenu::setupItemPaths(Theme theme){
 	ItemInfos[2].iconPath = THEMED_FILE(Menu, Connection, theme);
 	ItemInfos[2].iconAltPath = THEMED_FILE(Menu, Connection, theme);
 	ItemInfos[3].iconPath = THEMED_FILE(Menu, Settings, theme);
+	ItemInfos[4].iconPath = THEMED_FILE(Menu, Notification, theme);
 }
 
 void MainMenu::resetMenuIndex(){
@@ -200,7 +202,8 @@ void MainMenu::onClick(){
 			[](){ },
 			[this](){ transition([](){ return std::make_unique<Level>(); }); },
 			[](){ },
-			[this](){ transition([](){ return std::make_unique<SettingsScreen>(); }); }
+			[this](){ transition([](){ return std::make_unique<SettingsScreen>(); }); },
+			[this](){ transition([](){ return std::make_unique<MusicScreen>(); }); }
 	};
 
 	launcher[index]();
