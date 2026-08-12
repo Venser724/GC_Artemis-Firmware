@@ -70,7 +70,10 @@ static const char* resetReasonStr(esp_reset_reason_t r){
 		// retention pool included to verify the sleep fix: with light-sleep PM configured once,
 		// the CPU-retention buffer is allocated a single time, so these should stay constant across
 		// sleep/wake cycles instead of the largest block shrinking (the fragmentation that crashed us).
-		printf("[DIAG] total free=%u min=%u largest=%u | internal free=%u min=%u largest=%u | retention free=%u largest=%u\n",
+		// dma pool added to hunt a btController "Mem alloc fail ... caps 0x1808" crash (DMA|INTERNAL|
+		// DEFAULT) seen once in a coredump - suspected fragmentation of this pool from BLE traffic,
+		// same shape as the retention-pool bug, different pool.
+		printf("[DIAG] total free=%u min=%u largest=%u | internal free=%u min=%u largest=%u | retention free=%u largest=%u | dma free=%u largest=%u\n",
 			   (unsigned) esp_get_free_heap_size(),
 			   (unsigned) esp_get_minimum_free_heap_size(),
 			   (unsigned) heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT),
@@ -78,7 +81,20 @@ static const char* resetReasonStr(esp_reset_reason_t r){
 			   (unsigned) heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL),
 			   (unsigned) heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL),
 			   (unsigned) heap_caps_get_free_size(MALLOC_CAP_RETENTION),
-			   (unsigned) heap_caps_get_largest_free_block(MALLOC_CAP_RETENTION));
+			   (unsigned) heap_caps_get_largest_free_block(MALLOC_CAP_RETENTION),
+			   (unsigned) heap_caps_get_free_size(MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL),
+			   (unsigned) heap_caps_get_largest_free_block(MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL));
+
+		// Bangle's task has only a 4 KB stack and getProperty() is regex-heavy (4x
+		// std::regex_replace per property) - watching headroom here to check whether a burst of
+		// musicinfo/musicstate messages is what's driving it toward overflow.
+		TaskHandle_t bangleTask = xTaskGetHandle("Bangle");
+		if(bangleTask != nullptr){
+			printf("[DIAG] Bangle task stack min-free=%u words (%u bytes)\n",
+				   (unsigned) uxTaskGetStackHighWaterMark(bangleTask),
+				   (unsigned) (uxTaskGetStackHighWaterMark(bangleTask) * sizeof(StackType_t)));
+		}
+
 		vTaskDelay(pdMS_TO_TICKS(10000));
 	}
 }
