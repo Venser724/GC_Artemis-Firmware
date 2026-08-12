@@ -53,10 +53,19 @@ void LVGL::loop(){
 		startScreen([](){ return std::make_unique<AlarmScreen>(); });
 	}
 
-	// TODO this rly should have a lock on it, but unfortunately the system is made this way:
-	// TODO screens start other screens in their own loop which would lock the thread forever, should ideally be some kind of a queue that automatically starts new after looping current
 	if(currentScreen){
 		currentScreen->loop();
+	}
+
+	// Deferred so a screen calling transition() from within its own loop()/input handling never
+	// gets destroyed while still on the call stack (currentScreen.reset() inside startScreen()
+	// used to run synchronously mid-call, so control returned into a freed screen's own loop -
+	// this is what the old TODO here was flagging). Safe now: currentScreen->loop() has already
+	// fully returned by this point.
+	if(pendingTransition){
+		auto create = std::move(pendingTransition);
+		pendingTransition = nullptr;
+		startScreen(create);
 	}
 
 	auto ttn = lv_timer_handler();
@@ -83,6 +92,10 @@ void LVGL::stopScreen(){
 	if(!currentScreen) return;
 	currentScreen->stop();
 	lv_indev_set_group(InputLVGL::getInstance()->getIndev(), nullptr);
+}
+
+void LVGL::requestTransition(std::function<std::unique_ptr<LVScreen>()> create){
+	pendingTransition = std::move(create);
 }
 
 lv_disp_t* LVGL::disp() const{

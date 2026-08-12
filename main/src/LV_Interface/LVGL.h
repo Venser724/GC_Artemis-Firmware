@@ -26,10 +26,15 @@ public:
 	// without touching LVGL directly - loop() picks it up and starts it on the correct thread.
 	void requestAlarmScreen();
 
+	/** Queues a transition to run after the current screen's loop() has returned - unlike calling
+	 * startScreen() directly, this is safe to call from within a screen's own loop()/input handling. */
+	void requestTransition(std::function<std::unique_ptr<LVScreen>()> create);
+
 private:
 	Display& display;
 
 	volatile bool alarmPending = false;
+	std::function<std::unique_ptr<LVScreen>()> pendingTransition;
 
 	static constexpr uint8_t Rows = 32;
 	uint8_t drawBuffer[2*128*Rows];
