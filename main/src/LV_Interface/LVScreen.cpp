@@ -30,7 +30,7 @@ void LVScreen::transition(std::function<std::unique_ptr<LVScreen>()> create){
 		ESP_LOGE(TAG, "Starting transition, but LVGL ptr isn't set");
 		abort();
 	}
-	lvgl->startScreen(create);
+	lvgl->requestTransition(std::move(create));
 }
 
 void LVScreen::start(LVGL* lvgl){

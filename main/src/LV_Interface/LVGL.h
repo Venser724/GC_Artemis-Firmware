@@ -19,6 +19,10 @@ public:
 	/** startScreen should be called immediately after this function. */
 	void stopScreen();
 
+	/** Queues a transition to run after the current screen's loop() has returned - unlike calling
+	 * startScreen() directly, this is safe to call from within a screen's own loop()/input handling. */
+	void requestTransition(std::function<std::unique_ptr<LVScreen>()> create);
+
 	void rotateScreen(bool rotation);
 
 private:
@@ -36,6 +40,7 @@ private:
 	void loop() override;
 
 	std::unique_ptr<LVScreen> currentScreen;
+	std::function<std::unique_ptr<LVScreen>()> pendingTransition;
 
 //	std::mutex mutex;
 };
