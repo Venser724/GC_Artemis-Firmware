@@ -5,7 +5,6 @@
 #include <mjson.h>
 #include <esp_log.h>
 #include <cmath>
-#include <regex>
 #include <cstdlib>
 #include <mbedtls/base64.h>
 
@@ -64,6 +63,46 @@ static std::string decodeUnicodeEscapes(const std::string& in){
 
 	return out;
 }
+
+// Single-pass replacement for the old 4x std::regex_replace + erase/replace chain - same net
+// effect (\n -> newline, \r -> dropped, \t -> space, \\ -> \, and literal CR/tab bytes get the
+// same treatment as their escaped forms), but without std::regex's heavy stack use on Bangle's
+// task (confirmed via a live stack-watermark capture: a single long/Cyrillic property came
+// within ~1.3 KB of exhausting the 4 KB stack this ran on). Also fixes an ordering bug the old
+// sequential-regex-passes approach had: resolving "\n" before "\\" meant a literal "\\n" in the
+// source (escaped backslash followed by a literal 'n') could be misread as an escaped newline;
+// a single left-to-right scan can't make that mistake.
+static std::string unescapeControlChars(const std::string& in){
+	std::string out;
+	out.reserve(in.size());
+
+	size_t i = 0;
+	while(i < in.size()){
+		char c = in[i];
+
+		if(c == '\\' && i + 1 < in.size()){
+			char next = in[i + 1];
+			switch(next){
+				case 'n':  out += '\n'; break;
+				case 'r':  /* dropped, matching the old \r-strip behavior */ break;
+				case 't':  out += ' '; break;
+				case '\\': out += '\\'; break;
+				default:   out += c; out += next; break;
+			}
+			i += 2;
+			continue;
+		}
+
+		if(c == '\r'){ ++i; continue; }
+		if(c == '\t'){ out += ' '; ++i; continue; }
+
+		out += c;
+		++i;
+	}
+
+	return out;
+}
+
 const std::map<std::pair<Bangle::CallState, Bangle::CallCmd>, Bangle::CallState> Bangle::CallTransitions = {
 		{ { Bangle::CallState::None,             Bangle::CallCmd::Incoming }, Bangle::CallState::Incoming },
 		{ { Bangle::CallState::None,             Bangle::CallCmd::Outgoing }, Bangle::CallState::Outgoing },
@@ -82,7 +121,7 @@ const std::unordered_map<Bangle::CallState, Bangle::CallInfo> Bangle::CallInfoMa
 };
 
 
-Bangle::Bangle(BLE::Server* server) : Threaded("Bangle", 4 * 1024), server(server), uart(server){
+Bangle::Bangle(BLE::Server* server) : Threaded("Bangle", 8 * 1024), server(server), uart(server){
 	esp_log_level_set(TAG, ESP_LOG_VERBOSE); // debug: default is WARN project-wide, this only raises our own tag
 	server->setOnDisconnectCb([this](const esp_bd_addr_t addr){ onDisconnect(); });
 	music.setSender([this](Media::Command cmd){ sendMusicCommand(cmd); });
@@ -492,12 +531,7 @@ std::string Bangle::getProperty(const std::string& line, std::string prop){
 	}
 
 	s = decodeUnicodeEscapes(s);
-	s = std::regex_replace(s, std::regex(R"(\\n)"), "\n");
-	s = std::regex_replace(s, std::regex(R"(\\r)"), "\r");
-	s = std::regex_replace(s, std::regex(R"(\\\\)"), "\\");
-	s = std::regex_replace(s, std::regex(R"(\\t)"), "\t");
-	s.erase(std::remove(s.begin(), s.end(), '\r'), s.end());
-	std::replace(s.begin(), s.end(), '\t', ' ');
+	s = unescapeControlChars(s);
 
 	return s;
 }
