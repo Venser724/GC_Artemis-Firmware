@@ -25,6 +25,27 @@ BLE::GAP::GAP(){
 
 	initSecure();
 
+	// Diagnostic: log whatever BLE bonds Bluedroid has persisted in NVS at boot. Background
+	// reconnect only works while a bond survives on both the watch and the phone - this is a
+	// cheap way to check, at boot, whether the watch's side of that bond is still there.
+	{
+		int bondedCount = esp_ble_get_bond_device_num();
+		if(bondedCount <= 0){
+			printf("[DIAG] BLE bonds: none\n");
+		}else{
+			static constexpr int MaxLogged = 4;
+			esp_ble_bond_dev_t bondedDevices[MaxLogged];
+			int toFetch = bondedCount > MaxLogged ? MaxLogged : bondedCount;
+			esp_ble_get_bond_device_list(&toFetch, bondedDevices);
+			printf("[DIAG] BLE bonds: %d total\n", bondedCount);
+			for(int i = 0; i < toFetch; i++){
+				const auto& addr = bondedDevices[i].bd_addr;
+				printf("[DIAG]   bond %d: %02x:%02x:%02x:%02x:%02x:%02x\n", i,
+					   addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
+			}
+		}
+	}
+
 	// Usually done when GATTC registers (ESP_GATTC_REG_EVT)
 	esp_ble_gap_config_adv_data((esp_ble_adv_data_t*) &AdvertConfig);
 	esp_ble_gap_config_adv_data((esp_ble_adv_data_t*) &AdvertRespConfig);
