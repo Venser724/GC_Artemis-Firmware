@@ -83,25 +83,25 @@ void ThreadedClosure::loop(){
 	fn();
 }
 
-SleepyThreaded::SleepyThreaded(TickType_t loopInterval, const char* name, size_t stackSize, uint8_t priority, int8_t core) : Threaded(name, stackSize, priority, core), SleepTime(loopInterval){
-	pauseSem = xSemaphoreCreateBinary();
-}
+SleepyThreaded::SleepyThreaded(TickType_t loopInterval, const char* name, size_t stackSize, uint8_t priority, int8_t core) : Threaded(name, stackSize, priority, core), SleepTime(loopInterval){}
 
-SleepyThreaded::~SleepyThreaded(){
-	vSemaphoreDelete(pauseSem);
-}
+SleepyThreaded::~SleepyThreaded() = default;
 
 void SleepyThreaded::pause(){
-	if(paused) return;
-	xSemaphoreGive(pauseSem);
-	while(!paused){
-		vTaskDelay(1);
-	}
+	// Suspends the task in place instead of stop()+start()-ing it (which deleted and recreated
+	// the FreeRTOS task, and its stack, on every single sleep/wake cycle - the exact same
+	// alloc/free-every-cycle shape that fragmented the retention pool in Sleep.cpp, just against
+	// the general internal-8bit pool instead. Confirmed via a coredump: a "Mem alloc fail" abort
+	// trying to allocate this task's stack back on resume(), from Sleep::sleep()'s wake path.
+	if(paused || !running()) return;
+	paused = true;
+	vTaskSuspend(getTask());
 }
 
 void SleepyThreaded::resume(){
+	if(!paused) return;
 	paused = false;
-	start();
+	vTaskResume(getTask());
 }
 
 void SleepyThreaded::resetTime(){
@@ -110,11 +110,7 @@ void SleepyThreaded::resetTime(){
 
 void SleepyThreaded::loop(){
 	if(millis() - lastLoop < SleepTime){
-		if(xSemaphoreTake(pauseSem, millis() - lastLoop + 1) == pdTRUE){
-			stop(0);
-			paused = true;
-			return;
-		}
+		vTaskDelay(SleepTime - (millis() - lastLoop));
 		return;
 	}
 
