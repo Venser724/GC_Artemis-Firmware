@@ -27,6 +27,8 @@ protected:
 
 	virtual void loop() = 0;
 
+	TaskHandle_t getTask() const { return task; }
+
 private:
 	const char* name;
 	size_t stackSize;
@@ -73,7 +75,6 @@ private:
 	const TickType_t SleepTime;
 	TickType_t lastLoop = 0;
 
-	SemaphoreHandle_t pauseSem;
 	bool paused = false;
 
 	void loop() final;
