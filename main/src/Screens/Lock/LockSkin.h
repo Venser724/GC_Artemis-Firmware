@@ -33,6 +33,7 @@ private:
 	Slider* locker = nullptr;
 	lv_obj_t* rest = nullptr;
 	lv_obj_t* notifList = nullptr;
+	lv_obj_t* emptyNotifLabel = nullptr;
 	lv_obj_t* date = nullptr;
 	WeatherElement* weather = nullptr;
 	Weather::State lastWeather;
@@ -44,6 +45,7 @@ private:
 	void addNotifIcon(NotifIcon icon);
 	void removeNotifIcon(NotifIcon icon);
 	void updateNotifs();
+	void updateEmptyState();
 	void buildUI();
 	void setDateLabel();
 	void updateWeather();

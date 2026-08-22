@@ -8,6 +8,12 @@
 #include "Services/Weather.h"
 #include "Theme/theme.h"
 
+// LV_OBJ_FLAG_SCROLL_ON_FOCUS always scrolls with LV_ANIM_ON (hardcoded in lv_obj.c) - use this
+// instead wherever the clock<->notifications scroll should happen instantly.
+static void scrollIntoViewNoAnim(lv_event_t* evt){
+	lv_obj_scroll_to_view_recursive(lv_event_get_target(evt), LV_ANIM_OFF);
+}
+
 LockSkin::LockSkin(lv_obj_t* parent, lv_group_t* inputGroup) : LVObject(parent), inputGroup(inputGroup){
 	notifs.reserve(MaxNotifs);
 
@@ -100,7 +106,7 @@ void LockSkin::notifAdd(const Notif& notif){
 			lv_event_send(focused, LV_EVENT_CLICKED, nullptr);
 		}
 
-		lv_obj_add_flag(*item, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
+		lv_obj_add_event_cb(*item, scrollIntoViewNoAnim, LV_EVENT_FOCUSED, nullptr);
 		lv_obj_add_flag(*item, LV_OBJ_FLAG_SCROLL_CHAIN_VER);
 
 		notifs.insert(std::make_pair(notif.uid, item));
@@ -115,6 +121,8 @@ void LockSkin::notifAdd(const Notif& notif){
 		addNotifIcon(notifIcon(notif));
 	}
 	el->update(notif);
+
+	updateEmptyState();
 }
 
 void LockSkin::notifRem(uint32_t id){
@@ -127,17 +135,36 @@ void LockSkin::notifRem(uint32_t id){
 
 	lv_obj_del(*el);
 	notifs.erase(it);
+
+	updateEmptyState();
 }
 
 void LockSkin::notifsClear(){
 	notifs.clear(); // This has to precede rest clearing
 	lv_obj_clean(notifList);
 
+	updateEmptyState();
+
 	if(icons == nullptr){
 		return;
 	}
 
 	icons->clear();
+}
+
+void LockSkin::updateEmptyState(){
+	if(emptyNotifLabel == nullptr) return;
+
+	bool empty = notifs.empty();
+	bool hidden = lv_obj_has_flag(emptyNotifLabel, LV_OBJ_FLAG_HIDDEN);
+
+	if(empty && hidden){
+		lv_obj_clear_flag(emptyNotifLabel, LV_OBJ_FLAG_HIDDEN);
+		lv_group_add_obj(inputGroup, emptyNotifLabel);
+	}else if(!empty && !hidden){
+		lv_obj_add_flag(emptyNotifLabel, LV_OBJ_FLAG_HIDDEN);
+		lv_group_remove_obj(emptyNotifLabel);
+	}
 }
 
 void LockSkin::addNotifIcon(NotifIcon icon){
@@ -271,6 +298,17 @@ void LockSkin::buildUI(){
 	lv_obj_set_style_pad_ver(notifList, 3, 0);
 	lv_obj_set_style_pad_gap(notifList, 3, 0);
 
+	// Empty state, shown in place of notifList when there are no notifications - kept as a
+	// sibling of notifList (not a child) so it's untouched by notifAdd's group-rebuild loop,
+	// which only re-adds notifList's own children.
+	emptyNotifLabel = lv_label_create(rest);
+	lv_obj_set_width(emptyNotifLabel, 110);
+	lv_obj_set_style_text_align(emptyNotifLabel, LV_TEXT_ALIGN_CENTER, 0);
+	lv_obj_center(emptyNotifLabel);
+	lv_label_set_text(emptyNotifLabel, "No notifications");
+	lv_obj_add_event_cb(emptyNotifLabel, scrollIntoViewNoAnim, LV_EVENT_FOCUSED, nullptr);
+	lv_obj_add_flag(emptyNotifLabel, LV_OBJ_FLAG_SCROLL_CHAIN_VER);
+
 	// BG
 
 	lv_obj_set_style_bg_color(main, lv_color_black(), 0);
@@ -279,9 +317,6 @@ void LockSkin::buildUI(){
 
 	lv_obj_set_style_bg_color(rest, settings->get().themeData.backgroundColor, 0);
 	lv_obj_set_style_bg_opa(rest, LV_OPA_COVER, 0);
-	lv_obj_set_style_border_color(rest, settings->get().themeData.highlightColor, 0);
-	lv_obj_set_style_border_opa(rest, LV_OPA_COVER, 0);
-	lv_obj_set_style_border_width(rest, 1, 0);
 
 	// Scrolling
 
@@ -291,8 +326,9 @@ void LockSkin::buildUI(){
 	lv_obj_add_flag(rest, LV_OBJ_FLAG_SNAPPABLE);
 
 	lv_group_add_obj(inputGroup, main);
+	lv_group_add_obj(inputGroup, emptyNotifLabel);
 	lv_group_set_wrap(inputGroup, false);
-	lv_obj_add_flag(main, LV_OBJ_FLAG_SCROLL_ON_FOCUS);
+	lv_obj_add_event_cb(main, scrollIntoViewNoAnim, LV_EVENT_FOCUSED, nullptr);
 	lv_obj_clear_flag(main, LV_OBJ_FLAG_SCROLLABLE);
 }
 
