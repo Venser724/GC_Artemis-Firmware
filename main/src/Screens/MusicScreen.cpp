@@ -20,7 +20,7 @@ MusicScreen::MusicScreen() : queue(8){
 	lv_obj_set_style_text_font(titleLabel, &devin, 0);
 	lv_obj_set_style_text_color(titleLabel, lv_color_white(), 0);
 	lv_obj_align(titleLabel, LV_ALIGN_TOP_MID, 0, 18);
-	lv_label_set_text(titleLabel, "—");
+	lv_label_set_text(titleLabel, "No media");
 
 	artistLabel = lv_label_create(*this);
 	lv_label_set_long_mode(artistLabel, LV_LABEL_LONG_SCROLL_CIRCULAR);
@@ -29,20 +29,25 @@ MusicScreen::MusicScreen() : queue(8){
 	lv_obj_set_style_text_font(artistLabel, &devin, 0);
 	lv_obj_set_style_text_color(artistLabel, lv_color_hex(0xAAAAAA), 0);
 	lv_obj_align(artistLabel, LV_ALIGN_TOP_MID, 0, 46);
-	lv_label_set_text(artistLabel, "");
+	lv_label_set_text(artistLabel, "No artist");
 
-	stateLabel = lv_label_create(*this);
-	lv_obj_set_style_text_font(stateLabel, &devin, 0);
-	lv_obj_set_style_text_color(stateLabel, lv_color_white(), 0);
-	lv_obj_align(stateLabel, LV_ALIGN_CENTER, 0, 16);
-	lv_label_set_text(stateLabel, "||");
+	prevIcon = lv_label_create(*this);
+	lv_obj_set_style_text_font(prevIcon, &mediaIcons, 0);
+	lv_obj_set_style_text_color(prevIcon, lv_color_hex(0x555555), 0);
+	lv_obj_align(prevIcon, LV_ALIGN_BOTTOM_LEFT, 8, -12);
+	lv_label_set_text(prevIcon, LV_SYMBOL_PREV);
 
-	hintLabel = lv_label_create(*this);
-	lv_obj_set_style_text_align(hintLabel, LV_TEXT_ALIGN_CENTER, 0);
-	lv_obj_set_style_text_font(hintLabel, &devin, 0);
-	lv_obj_set_style_text_color(hintLabel, lv_color_hex(0x555555), 0);
-	lv_obj_align(hintLabel, LV_ALIGN_BOTTOM_MID, 0, -4);
-	lv_label_set_text(hintLabel, "prev  OK  next");
+	playPauseIcon = lv_label_create(*this);
+	lv_obj_set_style_text_font(playPauseIcon, &mediaIcons, 0);
+	lv_obj_set_style_text_color(playPauseIcon, lv_color_hex(0x555555), 0);
+	lv_obj_align(playPauseIcon, LV_ALIGN_BOTTOM_MID, 0, -12);
+	lv_label_set_text(playPauseIcon, LV_SYMBOL_PLAY);
+
+	nextIcon = lv_label_create(*this);
+	lv_obj_set_style_text_font(nextIcon, &mediaIcons, 0);
+	lv_obj_set_style_text_color(nextIcon, lv_color_hex(0x555555), 0);
+	lv_obj_align(nextIcon, LV_ALIGN_BOTTOM_RIGHT, -8, -12);
+	lv_label_set_text(nextIcon, LV_SYMBOL_NEXT);
 }
 
 void MusicScreen::onStart(){
@@ -66,15 +71,15 @@ void MusicScreen::refresh(){
 
 	const auto np = media->get();
 	if(first || np.title != lastTitle){
-		lv_label_set_text(titleLabel, np.title.empty() ? "—" : np.title.c_str());
+		lv_label_set_text(titleLabel, np.title.empty() ? "No media" : np.title.c_str());
 		lastTitle = np.title;
 	}
 	if(first || np.artist != lastArtist){
-		lv_label_set_text(artistLabel, np.artist.c_str());
+		lv_label_set_text(artistLabel, np.artist.empty() ? "No artist" : np.artist.c_str());
 		lastArtist = np.artist;
 	}
 	if(first || np.playing != lastPlaying){
-		lv_label_set_text(stateLabel, np.playing ? ">" : "||");
+		lv_label_set_text(playPauseIcon, np.playing ? LV_SYMBOL_PAUSE : LV_SYMBOL_PLAY);
 		lastPlaying = np.playing;
 	}
 	first = false;

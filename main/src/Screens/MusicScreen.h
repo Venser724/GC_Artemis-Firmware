@@ -22,8 +22,9 @@ private:
 
 	lv_obj_t* titleLabel = nullptr;
 	lv_obj_t* artistLabel = nullptr;
-	lv_obj_t* stateLabel = nullptr;
-	lv_obj_t* hintLabel = nullptr;
+	lv_obj_t* prevIcon = nullptr;
+	lv_obj_t* playPauseIcon = nullptr;
+	lv_obj_t* nextIcon = nullptr;
 
 	EventQueue queue;
 	std::string lastTitle;
