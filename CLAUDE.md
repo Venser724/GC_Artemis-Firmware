@@ -22,7 +22,7 @@ At the start of a work session, before diving into the task, check whether a wat
 
 1. `ls /dev/cu.usbmodem*` — is a watch connected? If not, skip the rest.
 2. If connected, identify it by its app version in `esp_app_desc` (near flash `0x10020`): `a-dev-v…` is Venser's own Android watch; `v2.1.1-…-g<sha>` (git-describe off the upstream tag, since `i-dev` has no tags of its own) is the `i-dev` / girlfriend's iPhone watch. Reading flash briefly resets the watch — harmless.
-3. **If it is Venser's (a-dev) watch, proactively look for trouble right away — don't wait to be asked.** Read the coredump partition (`0x3be000`, 256K): a header that is not all `0xFF` means a crash was recorded — decode it against the matching `build/Artemis-Firmware.elf` and report the backtrace. Also note the boot reset reason. This only works while coredump-to-flash is enabled in the flashed build.
+3. **Either way, proactively look for trouble right away — don't wait to be asked.** Read the coredump partition (`0x3be000`, 256K): a header that is not all `0xFF` means a crash was recorded — decode it against the matching branch's `build/Artemis-Firmware.elf` (rebuild on the right branch first if the last local build was for the other watch) and report the backtrace. Also note the boot reset reason. Coredump-to-flash is enabled on both `a-dev` and `i-dev` as of 2026-08-30 - this only works while that stays enabled in the flashed build.
 
 ## Build environment
 
