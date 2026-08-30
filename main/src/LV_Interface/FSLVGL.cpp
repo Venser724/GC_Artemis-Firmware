@@ -171,6 +171,11 @@ void FSLVGL::loadCache(Theme theme){
 			THEMED_FILE(Icons, Trash, theme),
 			THEMED_FILE(Icons, TrashSel, theme),
 
+			File::Weather::Theme1::Sun,
+			File::Weather::Theme1::Cloud,
+			File::Weather::Theme1::Rain,
+			File::Weather::Theme1::Snow,
+
 			THEMED_FILE(SmallIcons, AppInst, theme),
 			THEMED_FILE(SmallIcons, AppMess, theme),
 			THEMED_FILE(SmallIcons, AppSms, theme),
@@ -208,7 +213,8 @@ void FSLVGL::loadCache(Theme theme){
 			THEMED_FILE(Menu, Connection, theme),
 			THEMED_FILE(Menu, Find, theme),
 			THEMED_FILE(Menu, Level, theme),
-			THEMED_FILE(Menu, Settings, theme)
+			THEMED_FILE(Menu, Settings, theme),
+			THEMED_FILE(Menu, Notification, theme)
 	};
 
 	for(const auto& p: Cached){
