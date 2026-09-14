@@ -33,7 +33,9 @@ void Events::post(Facility facility, const void* data, size_t size){
 			qData = malloc(size);
 			memcpy(qData, data, size);
 		}
-		queue->post(facility, qData);
+		if(!queue->post(facility, qData)){
+			free(qData);
+		}
 	}
 }
 
